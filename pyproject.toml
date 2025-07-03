@@ -1,0 +1,19 @@
+[project]
+name = "aibootcamp"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "zhangyi",email = "zhangyi1101@foxmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+]
+
+[tool.poetry]
+packages = [{include = "aibootcamp", from = "src"}]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
