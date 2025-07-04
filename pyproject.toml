@@ -6,9 +6,6 @@ authors = [
     {name = "zhangyi",email = "zhangyi1101@foxmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.10"
-dependencies = [
-]
 
 [tool.poetry]
 packages = [{include = "aibootcamp", from = "src"}]
@@ -17,3 +14,16 @@ packages = [{include = "aibootcamp", from = "src"}]
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "tsinghua"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+priority = "primary"
+
+[tool.poetry.dependencies]
+python = ">=3.10, <4.0"
+mcp = ">=1.6.0"
+llama-index = "^0.12.46"
+llama-index-llms-ollama = ">=0.5.4"
+llama-index-tools-mcp = ">=0.1.1"
+fastmcp = "^2.10.1"
