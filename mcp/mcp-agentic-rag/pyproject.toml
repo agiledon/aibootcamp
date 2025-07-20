@@ -1,0 +1,12 @@
+[project]
+name = "mcp-agentic-rag"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastmcp>=2.10.5",
+    "llama-index>=0.12.49",
+    "qdrant-client>=1.15.0",
+    "tqdm>=4.67.1",
+]
