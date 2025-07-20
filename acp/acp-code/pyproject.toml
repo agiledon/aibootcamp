@@ -3,5 +3,11 @@ name = "acp-code"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.10"
-dependencies = []
+requires-python = ">=3.12"
+dependencies = [
+    "acp-sdk>=0.0.6",
+    "crewai>=0.148.0",
+    "duckduckgo-search>=8.1.1",
+    "ollama>=0.5.1",
+    "smolagents>=1.20.0",
+]
