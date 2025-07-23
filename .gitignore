@@ -133,4 +133,27 @@ cython_debug/
 .vscode/
 
 # MacOS
-.DS_Store 
+.DS_Store
+
+# Vector databases and embeddings
+rag/llamaindex-rag/chroma_db/
+**/chroma_db/
+*.db
+*.sqlite
+*.sqlite3
+
+# Model files and embeddings
+*.bin
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.onnx
+*.safetensors
+
+# Temporary files
+*.tmp
+*.temp
+.cache/ 

@@ -42,10 +42,9 @@ class DeepSeekRAGSystem:
         Settings.llm = ChatDeepSeek(
             model=model_name,
             temperature=0.1,
-            max_tokens=None,
-            timeout=None,
+            max_tokens=1000,
+            timeout=60,
             max_retries=2,
-            cache=True,
         )
 
         # 初始化嵌入模型 - 使用更轻量级的配置
@@ -159,10 +158,10 @@ class DeepSeekRAGSystem:
             print(f"核心问题: {core_question}")
             
             query_engine = self.vector_index.as_query_engine(
-                similarity_top_k=3,  # 减少检索数量
+                similarity_top_k=5,  # 减少检索数量
                 response_mode="compact",  # 使用compact模式减少响应时间
                 streaming=False,  # 关闭流式响应
-                similarity_threshold=0.5  # 降低相似度阈值
+                similarity_threshold=0.6  # 降低相似度阈值
             )
 
             print("查询引擎创建成功，开始查询...")
@@ -232,7 +231,7 @@ if __name__ == "__main__":
     # print(f"问题：{question}\n回答：{answer}")
 
     # 使用更简单的问题进行测试
-    question = "这篇文章主要讲了什么内容？"
+    question = "你是编写书评的作者，请总结这篇文章的主题，并以要点形式给出？"
     answer = rag.query(question)
     print(f"问题：{question}\n回答：{answer}")
     #

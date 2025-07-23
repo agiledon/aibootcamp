@@ -7,7 +7,7 @@ llm = OllamaLLM(model="qwen:7b")
 
 # 创建一个链式架构来生成故事的标题
 template = """<s><|user|>
-根据{summary}阐述的故事生成一个中文标题. 只返回标题.<|end|>
+根据{summary}阐述的故事生成一个标题. 只返回标题.<|end|>
 <|assistant|>"""
 title_prompt = PromptTemplate(template=template, input_variables=["summary"])
 
@@ -18,7 +18,7 @@ title_chain = title_prompt | llm | StrOutputParser()
 
 # 使用故事梗概和标题创建一个链式架构来生成角色描述
 character_template = """<s><|user|>
-根据{summary}和{title}生成一个故事的主角中文描述. 只返回描述.<|end|>
+根据{summary}和{title}生成一个故事的主角描述. 只返回描述.<|end|>
 <|assistant|>"""
 character_prompt = PromptTemplate(
     template=character_template, input_variables=["summary", "title"]
@@ -50,7 +50,7 @@ def create_story_chain():
     
     # 第三步：生成故事并指定output_key
     story_step = RunnablePassthrough.assign(
-        final_story=story_chain
+        story=story_chain
     )
     
     # 组合所有步骤
@@ -64,4 +64,4 @@ result = story_chain_complete.invoke({"summary": "一个小女孩失去了她的
 
 print(f"生成的标题: {result.get('title', 'N/A')}")
 print(f"生成的角色: {result.get('character', 'N/A')}")
-print(f"生成的故事: {result.get('final_story', 'N/A')}")
+print(f"生成的故事: {result.get('story', 'N/A')}")
