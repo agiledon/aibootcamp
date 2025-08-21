@@ -156,4 +156,7 @@ rag/llamaindex-rag/chroma_db/
 # Temporary files
 *.tmp
 *.temp
-.cache/ 
+.cache/
+
+# CrewAI DDD Expert output files
+agent/crewai_ddd_expert/output/ 
