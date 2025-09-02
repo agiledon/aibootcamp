@@ -1,0 +1,21 @@
+[project]
+name = "rag-on-milvus"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "llama-index>=0.10.36",
+    "llama-index-embeddings-ollama>=0.8.2",
+    "llama-index-embeddings-openai>=0.1.9",
+
+    "llama-index-llms-ollama>=0.7.1",
+    "llama-index-llms-openai>=0.1.18",
+    "llama-index-vector-stores-milvus>=0.1.11",
+    "milvus>=2.3.9",
+    "openai>=1.102.0",
+    "pymilvus>=2.6.1",
+    "python-dotenv>=1.1.1",
+    "sentence-transformers>=5.1.0",
+    "torch>=2.8.0",
+]

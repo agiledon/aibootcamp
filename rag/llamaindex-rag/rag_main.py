@@ -158,7 +158,7 @@ class DeepSeekRAGSystem:
             print(f"核心问题: {core_question}")
             
             query_engine = self.vector_index.as_query_engine(
-                similarity_top_k=5,  # 减少检索数量
+                similarity_top_k=similarity_top_k,  # 减少检索数量
                 response_mode="compact",  # 使用compact模式减少响应时间
                 streaming=False,  # 关闭流式响应
                 similarity_threshold=0.6  # 降低相似度阈值
