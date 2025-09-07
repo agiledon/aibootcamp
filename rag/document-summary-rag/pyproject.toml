@@ -1,0 +1,15 @@
+[project]
+name = "document-summary-rag"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "langchain-community>=0.3.29",
+    "langchain-deepseek>=0.1.4",
+    "llama-index>=0.13.3",
+    "llama-index-embeddings-ollama>=0.8.2",
+    "llama-index-llms-langchain>=0.7.0",
+    "llama-index-llms-ollama>=0.7.1",
+    "python-dotenv>=1.1.1",
+]

@@ -13,7 +13,6 @@ print("Milvus Server started successfully!")
 # 等待服务完全启动
 time.sleep(3)
 
-from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.core import Settings
 
