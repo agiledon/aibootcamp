@@ -159,4 +159,7 @@ rag/llamaindex-rag/chroma_db/
 .cache/
 
 # CrewAI DDD Expert output files
-agent/crewai_ddd_expert/output/ 
+agent/crewai_ddd_expert/output/
+
+# QLoRA example cache directory
+llm/qlora-example/cache/ 
