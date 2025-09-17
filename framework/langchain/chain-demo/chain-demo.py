@@ -36,27 +36,14 @@ story_prompt = PromptTemplate(
 story_chain = story_prompt | llm | StrOutputParser()
 
 
-# 创建组合链式架构
+# 创建组合链式架构 - 使用最新的 LangChain API 简化
 def create_story_chain():
-    # 第一步：生成标题
-    title_step = RunnablePassthrough.assign(
-        title=title_chain
+    # 使用链式 assign 调用，一次性完成所有步骤的组合
+    return (
+        RunnablePassthrough.assign(title=title_chain)
+        .assign(character=character_chain)
+        .assign(story=story_chain)
     )
-    
-    # 第二步：生成角色描述
-    character_step = RunnablePassthrough.assign(
-        character=character_chain
-    )
-    
-    # 第三步：生成故事并指定output_key
-    story_step = RunnablePassthrough.assign(
-        story=story_chain
-    )
-    
-    # 组合所有步骤
-    full_chain = title_step | character_step | story_step
-    
-    return full_chain
 
 # 创建并执行链式架构
 story_chain_complete = create_story_chain()

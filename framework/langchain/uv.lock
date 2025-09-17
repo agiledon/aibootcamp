@@ -551,20 +551,7 @@ wheels = [
 ]
 
 [[package]]
-name = "langchain-ollama"
-version = "0.3.5"
-source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple/" }
-dependencies = [
-    { name = "langchain-core" },
-    { name = "ollama" },
-]
-sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/23/e0/b27015a936a3ca4f08a327c869e7ca385654486a08b94a887c90bc9d6c2c/langchain_ollama-0.3.5.tar.gz", hash = "sha256:022f1eb5f3134af40306cb46543a718a41db216ccaf33da5e02fc6f7dc5f3c2a", size = 28673 }
-wheels = [
-    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/8e/5d/75a3502f09361c248c14f80ac5a444df2b19d6d95eb369497dcbcb8b13b8/langchain_ollama-0.3.5-py3-none-any.whl", hash = "sha256:f2add6aa1aa8d6f1153d9a50276c6ccb1b7f6151fa0917f8ed6ccb56a5a23d2f", size = 23786 },
-]
-
-[[package]]
-name = "langchain-samples"
+name = "langchain-demo"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
@@ -580,6 +567,19 @@ requires-dist = [
     { name = "langchain-community", specifier = ">=0.3.27" },
     { name = "langchain-ollama", specifier = ">=0.3.5" },
     { name = "llama-index-llms-ollama", specifier = ">=0.6.2" },
+]
+
+[[package]]
+name = "langchain-ollama"
+version = "0.3.5"
+source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple/" }
+dependencies = [
+    { name = "langchain-core" },
+    { name = "ollama" },
+]
+sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/23/e0/b27015a936a3ca4f08a327c869e7ca385654486a08b94a887c90bc9d6c2c/langchain_ollama-0.3.5.tar.gz", hash = "sha256:022f1eb5f3134af40306cb46543a718a41db216ccaf33da5e02fc6f7dc5f3c2a", size = 28673 }
+wheels = [
+    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/8e/5d/75a3502f09361c248c14f80ac5a444df2b19d6d95eb369497dcbcb8b13b8/langchain_ollama-0.3.5-py3-none-any.whl", hash = "sha256:f2add6aa1aa8d6f1153d9a50276c6ccb1b7f6151fa0917f8ed6ccb56a5a23d2f", size = 23786 },
 ]
 
 [[package]]
