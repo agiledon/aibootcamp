@@ -139,44 +139,47 @@ storage_context = StorageContext.from_defaults(persist_dir="city_index")
 doc_summary_index = load_index_from_storage(storage_context)
 
 # using Query Engine to query the index
-# query_engine = doc_summary_index.as_query_engine(
-#     response_mode="tree_summarize", use_async=True
-# )
-# response = query_engine.query("北京有哪些著名的旅游景点？")
-# print(response)
+query_engine = doc_summary_index.as_query_engine(
+    response_mode="tree_summarize", use_async=True
+)
+response = query_engine.query("北京有哪些著名的旅游景点？")
+print("########################################################")
+print("通过Tree Summarize获取的response:", response)
 
 # Retrieve the summary of the index on LLM
-# from llama_index.core.indices.document_summary import (
-#     DocumentSummaryIndexLLMRetriever,
-# )
-# retriever = DocumentSummaryIndexLLMRetriever(
-#     doc_summary_index,
-#     # choice_select_prompt=None,
-#     # choice_batch_size=10,
-#     # choice_top_k=1,
-#     # format_node_batch_fn=None,
-#     # parse_choice_select_answer_fn=None,
-# )
-# retrieved_nodes = retriever.retrieve("北京有哪些著名的旅游景点？")
-# print("length of retrieved_nodes:", len(retrieved_nodes))
-# print(retrieved_nodes[0].score)
-# print(retrieved_nodes[0].node.get_text())
+from llama_index.core.indices.document_summary import (
+    DocumentSummaryIndexLLMRetriever,
+)
+retriever = DocumentSummaryIndexLLMRetriever(
+    doc_summary_index,
+    # choice_select_prompt=None,
+    # choice_batch_size=10,
+    # choice_top_k=1,
+    # format_node_batch_fn=None,
+    # parse_choice_select_answer_fn=None,
+)
+retrieved_nodes = retriever.retrieve("北京有哪些著名的旅游景点？")
+print("########################################################")
+print("length of retrieved_nodes:", len(retrieved_nodes))
+print(retrieved_nodes[0].score)
+print("通过LLM Retriever获取的response:", retrieved_nodes[0].node.get_text())
 
 # use retriever as part of a query engine
-# from llama_index.core.query_engine import RetrieverQueryEngine
+from llama_index.core.query_engine import RetrieverQueryEngine
 
-# # configure response synthesizer
-# response_synthesizer = get_response_synthesizer(response_mode="tree_summarize")
+# configure response synthesizer
+response_synthesizer = get_response_synthesizer(response_mode="tree_summarize")
 
-# # assemble query engine
-# query_engine = RetrieverQueryEngine(
-#     retriever=retriever,
-#     response_synthesizer=response_synthesizer,
-# )
+# assemble query engine
+query_engine = RetrieverQueryEngine(
+    retriever=retriever,
+    response_synthesizer=response_synthesizer,
+)
 
-# # query
-# response = query_engine.query("北京有哪些著名的旅游景点？")
-# print(response)
+# query
+response = query_engine.query("北京有哪些著名的旅游景点？")
+print("########################################################")
+print("通过RetrieverQueryEngine获取的response:", response)
 
 from llama_index.core.indices.document_summary import (
     DocumentSummaryIndexEmbeddingRetriever,
@@ -188,4 +191,5 @@ retriever = DocumentSummaryIndexEmbeddingRetriever(
 retrieved_nodes = retriever.retrieve("北京有哪些著名的旅游景点？")
 print("length of retrieved_nodes:", len(retrieved_nodes))
 
-print(retrieved_nodes[0].node.get_text())
+print("########################################################")
+print("通过DocumentSummaryIndexEmbeddingRetriever获取的response:", retrieved_nodes[0].node.get_text())

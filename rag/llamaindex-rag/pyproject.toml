@@ -17,4 +17,6 @@ dependencies = [
     "llama-index-vector-stores-chroma>=0.4.2",
     "openai>=1.97.0",
     "python-dotenv>=1.1.1",
+    "tree-sitter>=0.25.1",
+    "tree-sitter-language-pack>=0.9.0",
 ]
