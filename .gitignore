@@ -162,4 +162,7 @@ rag/llamaindex-rag/chroma_db/
 agent/crewai_ddd_expert/output/
 
 # QLoRA example cache directory
-llm/qlora-example/cache/ rag/document-summary-rag/city_index/
+llm/qlora-example/cache/
+
+# Document summary RAG city index directory
+rag/document-summary-rag/city_index/
