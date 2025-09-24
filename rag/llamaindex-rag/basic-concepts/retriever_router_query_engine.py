@@ -17,11 +17,11 @@ documents = SimpleDirectoryReader(input_files=["data/paul_graham_essay.txt"]).lo
 # get nodes
 from llama_index.core import Settings
 # Set LLM and embedding to avoid OpenAI defaults
-from langchain_deepseek import ChatDeepSeek
+from llama_index.llms.deepseek import DeepSeek
 from llama_index.embeddings.ollama import OllamaEmbedding
 
-Settings.llm = ChatDeepSeek(
-    model="deepseek-chat",
+Settings.llm = DeepSeek(
+    model="deepseek-chat",  # 使用支持函数调用的模型
     temperature=0.1,
     max_tokens=1000,
     timeout=60,
