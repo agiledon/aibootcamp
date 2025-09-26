@@ -11,6 +11,7 @@ dependencies = [
     "llama-index>=0.12.50",
     "llama-index-core>=0.12.50",
     "llama-index-embeddings-ollama>=0.6.0",
+    "llama-index-llms-deepseek>=0.2.0",
     "llama-index-llms-langchain>=0.6.1",
     "llama-index-llms-ollama>=0.6.2",
     "llama-index-readers-file>=0.4.11",

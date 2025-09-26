@@ -110,11 +110,20 @@ router_query_engine = RouterQueryEngine(
 )
 
 # 9. 执行查询
-# response = router_query_engine.query("文档中提到的关键技术有哪些？")
-response = router_query_engine.query("文档中提到的分析模式该如何运用？")
+response = router_query_engine.query("文档中提到的关键技术有哪些？")
+# response = router_query_engine.query("文档中提到的分析模式该如何运用？")
 print(response)
 
 # 打印来源节点信息以验证后处理效果
 print("\n来源信息:")
 for idx, node in enumerate(response.source_nodes):
     print(f"{idx + 1}. 文档片段: {node.text[:100]}... | 相似度得分: {node.score:.4f}")
+
+from llama_index.core.evaluation import FaithfulnessEvaluator
+
+llm = DeepSeek(model="deepseek-chat", temperature=0.0)
+
+# define evaluator
+evaluator = FaithfulnessEvaluator(llm=llm)
+eval_result = evaluator.evaluate_response(response=response)
+print("评估是否通过:", "是" if eval_result.passing else "否")
