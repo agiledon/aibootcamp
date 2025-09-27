@@ -74,7 +74,7 @@ class DocumentChatController:
             # 文件已经处理过，直接使用缓存的查询引擎
             self.current_query_engine = st.session_state.current_query_engine
             self.view.show_success_message("文档已加载，可以直接提问！")
-            self.view.display_document_preview(uploaded_file)
+            self.view.display_document_preview(uploaded_file, max_pages=5)
             return True
         
         # 显示处理状态
@@ -93,7 +93,7 @@ class DocumentChatController:
             st.session_state.current_file_name = uploaded_file.name
             
             self.view.show_success_message("文档处理完成！")
-            self.view.display_document_preview(uploaded_file)
+            self.view.display_document_preview(uploaded_file, max_pages=5)
             return True
         else:
             self.view.show_error_message(message)
@@ -171,7 +171,7 @@ class DocumentChatController:
                 self.handle_file_upload(uploaded_file)
             else:
                 # 文件相同，直接显示预览
-                self.view.display_document_preview(uploaded_file)
+                self.view.display_document_preview(uploaded_file, max_pages=5)
         
         # 处理聊天输入
         user_input = self.view.render_chat_input()

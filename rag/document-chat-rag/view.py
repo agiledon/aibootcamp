@@ -6,6 +6,7 @@ View类 - 处理Streamlit UI组件和用户界面
 import base64
 import streamlit as st
 from typing import List, Dict, Any, Optional, Generator
+from document_converter import DocumentConverter
 
 
 class DocumentChatView:
@@ -13,6 +14,7 @@ class DocumentChatView:
     
     def __init__(self):
         self.setup_page_config()
+        self.document_converter = DocumentConverter()
     
     def setup_page_config(self):
         """设置页面配置"""
@@ -43,59 +45,82 @@ class DocumentChatView:
                 
         return uploaded_file
     
-    def display_document_preview(self, uploaded_file):
+    def display_document_preview(self, uploaded_file, max_pages: int = 5):
         """
-        显示文档预览（支持PDF和其他文档类型）
+        显示文档预览（统一使用PDF预览方式）
         
         Args:
             uploaded_file: 上传的文件对象
+            max_pages: 最大显示页数
         """
         with st.sidebar:
             file_extension = uploaded_file.name.split('.')[-1].lower()
             
-            if file_extension == 'pdf':
-                st.markdown("### PDF预览")
-                
+            # 显示文档信息
+            st.markdown("### 文档信息")
+            st.info(f"📄 文件名: {uploaded_file.name}")
+            st.info(f"📊 文件大小: {uploaded_file.size / 1024:.1f} KB")
+            st.info(f"📝 文件类型: {file_extension.upper()}")
+            
+            # 页数配置
+            st.markdown("### 预览设置")
+            max_pages = st.slider("显示页数", min_value=1, max_value=10, value=max_pages, 
+                                help="设置预览文档的最大页数")
+            
+            try:
                 # 将文件指针重置到开头
                 uploaded_file.seek(0)
-                base64_pdf = base64.b64encode(uploaded_file.read()).decode("utf-8")
                 
-                # 嵌入PDF的HTML
+                if file_extension == 'pdf':
+                    # PDF文件直接显示
+                    base64_pdf = base64.b64encode(uploaded_file.read()).decode("utf-8")
+                else:
+                    # 其他文件类型转换为PDF
+                    st.info("正在转换文档为PDF预览...")
+                    
+                    if file_extension in ['docx', 'doc']:
+                        # Word文档转换
+                        pdf_content = self.document_converter.convert_docx_to_pdf(
+                            uploaded_file.read(), max_pages
+                        )
+                    else:
+                        # 其他文档类型转换
+                        uploaded_file.seek(0)
+                        content = uploaded_file.read().decode('utf-8')
+                        pdf_content = self.document_converter.convert_to_pdf(
+                            content, f'.{file_extension}', max_pages
+                        )
+                    
+                    if pdf_content is None:
+                        st.error("文档转换失败，无法预览")
+                        return
+                    
+                    base64_pdf = base64.b64encode(pdf_content).decode("utf-8")
+                
+                # 显示PDF预览
+                st.markdown("### 文档预览")
                 pdf_display = f"""
                 <iframe src="data:application/pdf;base64,{base64_pdf}" 
                         width="100%" 
-                        height="400" 
+                        height="500" 
                         type="application/pdf"
                         style="border: 1px solid #ddd; border-radius: 5px;">
                 </iframe>
                 """
                 
                 st.markdown(pdf_display, unsafe_allow_html=True)
-            else:
-                # 对于非PDF文件，显示文件信息
-                st.markdown("### 文档信息")
-                st.info(f"📄 文件名: {uploaded_file.name}")
-                st.info(f"📊 文件大小: {uploaded_file.size / 1024:.1f} KB")
-                st.info(f"📝 文件类型: {file_extension.upper()}")
                 
-                # 对于文本文件，显示部分内容预览
-                if file_extension in ['txt', 'md', 'markdown', 'csv']:
-                    try:
-                        uploaded_file.seek(0)
-                        content = uploaded_file.read().decode('utf-8')
-                        
-                        if file_extension in ['md', 'markdown']:
-                            # 对于 markdown 文件，显示渲染后的预览
-                            st.markdown("### 内容预览")
-                            preview = content[:1000] + "..." if len(content) > 1000 else content
-                            st.markdown(preview)
-                        else:
-                            # 对于其他文本文件，显示纯文本预览
-                            preview = content[:500] + "..." if len(content) > 500 else content
-                            st.markdown("### 内容预览")
-                            st.text_area("文档内容预览", preview, height=200, disabled=True, label_visibility="collapsed")
-                    except Exception as e:
-                        st.warning(f"无法预览文件内容: {e}")
+            except Exception as e:
+                st.error(f"预览失败: {e}")
+                # 降级到文本预览
+                try:
+                    uploaded_file.seek(0)
+                    content = uploaded_file.read().decode('utf-8')
+                    preview = content[:1000] + "..." if len(content) > 1000 else content
+                    st.markdown("### 文本预览")
+                    st.text_area("文档内容预览", preview, height=200, disabled=True, label_visibility="collapsed")
+                except Exception as e2:
+                    st.warning(f"无法预览文件内容: {e2}")
     
     def render_chat_header(self):
         """渲染聊天界面头部"""
