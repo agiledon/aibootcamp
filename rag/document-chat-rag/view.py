@@ -33,9 +33,9 @@ class DocumentChatView:
             st.header("📁 添加文档")
             
             uploaded_file = st.file_uploader(
-                "选择PDF文件", 
-                type="pdf",
-                help="上传PDF文件进行文档问答"
+                "选择文档文件", 
+                type=["pdf", "docx", "doc", "md", "markdown", "csv", "txt"],
+                help="支持PDF、Word、Markdown、CSV、TXT文件进行文档问答"
             )
             
             if uploaded_file:
@@ -43,31 +43,59 @@ class DocumentChatView:
                 
         return uploaded_file
     
-    def display_pdf_preview(self, uploaded_file):
+    def display_document_preview(self, uploaded_file):
         """
-        显示PDF预览
+        显示文档预览（支持PDF和其他文档类型）
         
         Args:
             uploaded_file: 上传的文件对象
         """
         with st.sidebar:
-            st.markdown("### PDF预览")
+            file_extension = uploaded_file.name.split('.')[-1].lower()
             
-            # 将文件指针重置到开头
-            uploaded_file.seek(0)
-            base64_pdf = base64.b64encode(uploaded_file.read()).decode("utf-8")
-            
-            # 嵌入PDF的HTML
-            pdf_display = f"""
-            <iframe src="data:application/pdf;base64,{base64_pdf}" 
-                    width="100%" 
-                    height="400" 
-                    type="application/pdf"
-                    style="border: 1px solid #ddd; border-radius: 5px;">
-            </iframe>
-            """
-            
-            st.markdown(pdf_display, unsafe_allow_html=True)
+            if file_extension == 'pdf':
+                st.markdown("### PDF预览")
+                
+                # 将文件指针重置到开头
+                uploaded_file.seek(0)
+                base64_pdf = base64.b64encode(uploaded_file.read()).decode("utf-8")
+                
+                # 嵌入PDF的HTML
+                pdf_display = f"""
+                <iframe src="data:application/pdf;base64,{base64_pdf}" 
+                        width="100%" 
+                        height="400" 
+                        type="application/pdf"
+                        style="border: 1px solid #ddd; border-radius: 5px;">
+                </iframe>
+                """
+                
+                st.markdown(pdf_display, unsafe_allow_html=True)
+            else:
+                # 对于非PDF文件，显示文件信息
+                st.markdown("### 文档信息")
+                st.info(f"📄 文件名: {uploaded_file.name}")
+                st.info(f"📊 文件大小: {uploaded_file.size / 1024:.1f} KB")
+                st.info(f"📝 文件类型: {file_extension.upper()}")
+                
+                # 对于文本文件，显示部分内容预览
+                if file_extension in ['txt', 'md', 'markdown', 'csv']:
+                    try:
+                        uploaded_file.seek(0)
+                        content = uploaded_file.read().decode('utf-8')
+                        
+                        if file_extension in ['md', 'markdown']:
+                            # 对于 markdown 文件，显示渲染后的预览
+                            st.markdown("### 内容预览")
+                            preview = content[:1000] + "..." if len(content) > 1000 else content
+                            st.markdown(preview)
+                        else:
+                            # 对于其他文本文件，显示纯文本预览
+                            preview = content[:500] + "..." if len(content) > 500 else content
+                            st.markdown("### 内容预览")
+                            st.text_area("文档内容预览", preview, height=200, disabled=True, label_visibility="collapsed")
+                    except Exception as e:
+                        st.warning(f"无法预览文件内容: {e}")
     
     def render_chat_header(self):
         """渲染聊天界面头部"""
@@ -160,6 +188,10 @@ class DocumentChatView:
     def show_processing_status(self, message: str):
         """显示处理状态"""
         st.write(message)
+    
+    def show_document_stats(self, doc_count: int, total_chars: int):
+        """显示文档统计信息"""
+        st.info(f"📊 文档统计: 加载了 {doc_count} 个片段，总字符数 {total_chars}")
     
     def stop_app(self):
         """停止应用"""

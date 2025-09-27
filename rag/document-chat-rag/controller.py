@@ -19,6 +19,9 @@ class DocumentChatController:
         
         # 初始化session state
         self._init_session_state()
+        
+        # 从session state恢复状态
+        self._restore_state()
     
     def _init_session_state(self):
         """初始化Streamlit session state"""
@@ -28,6 +31,25 @@ class DocumentChatController:
             st.session_state.id = self.model.get_session_id()
             st.session_state.file_cache = {}
             st.session_state.messages = []
+            st.session_state.current_query_engine = None
+            st.session_state.file_processed = False
+            st.session_state.current_file_name = None
+    
+    def _restore_state(self):
+        """从session state恢复状态"""
+        import streamlit as st
+        
+        # 恢复查询引擎
+        if hasattr(st.session_state, 'current_query_engine') and st.session_state.current_query_engine is not None:
+            self.current_query_engine = st.session_state.current_query_engine
+        
+        # 恢复文件缓存到model
+        if hasattr(st.session_state, 'file_cache'):
+            self.model.file_cache = st.session_state.file_cache
+        
+        # 恢复消息历史到model
+        if hasattr(st.session_state, 'messages'):
+            self.model.messages = st.session_state.messages
     
     def handle_file_upload(self, uploaded_file) -> bool:
         """
@@ -39,19 +61,39 @@ class DocumentChatController:
         Returns:
             bool: 处理是否成功
         """
+        import streamlit as st
+        
         if uploaded_file is None:
             return False
+        
+        # 检查是否是同一个文件，避免重复处理
+        if (hasattr(st.session_state, 'current_file_name') and 
+            st.session_state.current_file_name == uploaded_file.name and
+            hasattr(st.session_state, 'file_processed') and 
+            st.session_state.file_processed):
+            # 文件已经处理过，直接使用缓存的查询引擎
+            self.current_query_engine = st.session_state.current_query_engine
+            self.view.show_success_message("文档已加载，可以直接提问！")
+            self.view.display_document_preview(uploaded_file)
+            return True
         
         # 显示处理状态
         self.view.show_processing_status("正在处理文档...")
         
-        # 处理PDF文件
-        success, message, query_engine = self.model.process_pdf_file(uploaded_file)
+        # 处理文档文件
+        success, message, query_engine = self.model.process_document_file(uploaded_file)
         
         if success:
             self.current_query_engine = query_engine
+            
+            # 保存状态到session state
+            st.session_state.current_query_engine = query_engine
+            st.session_state.file_cache = self.model.file_cache
+            st.session_state.file_processed = True
+            st.session_state.current_file_name = uploaded_file.name
+            
             self.view.show_success_message("文档处理完成！")
-            self.view.display_pdf_preview(uploaded_file)
+            self.view.display_document_preview(uploaded_file)
             return True
         else:
             self.view.show_error_message(message)
@@ -72,7 +114,7 @@ class DocumentChatController:
             return False
         
         if self.current_query_engine is None:
-            self.view.show_warning_message("请先上传PDF文档")
+            self.view.show_warning_message("请先上传文档")
             return False
         
         # 添加用户消息到历史
@@ -92,6 +134,10 @@ class DocumentChatController:
         # 添加助手回复到历史
         self.model.add_message("assistant", full_response)
         
+        # 同步状态到session state
+        import streamlit as st
+        st.session_state.messages = self.model.get_messages()
+        
         return True
     
     def handle_clear_chat(self):
@@ -99,6 +145,7 @@ class DocumentChatController:
         self.model.clear_messages()
         import streamlit as st
         st.session_state.messages = []
+        # 清空聊天历史但不重置文件处理状态
         gc.collect()
     
     def run(self):
@@ -116,8 +163,15 @@ class DocumentChatController:
         # 渲染侧边栏并处理文件上传
         uploaded_file = self.view.render_sidebar()
         
+        # 只有在文件真正发生变化时才处理文件上传
         if uploaded_file:
-            self.handle_file_upload(uploaded_file)
+            # 检查是否是新的文件
+            if (not hasattr(st.session_state, 'current_file_name') or 
+                st.session_state.current_file_name != uploaded_file.name):
+                self.handle_file_upload(uploaded_file)
+            else:
+                # 文件相同，直接显示预览
+                self.view.display_document_preview(uploaded_file)
         
         # 处理聊天输入
         user_input = self.view.render_chat_input()
@@ -125,6 +179,3 @@ class DocumentChatController:
         if user_input:
             self.handle_chat_input(user_input)
             st.rerun()
-        
-        # 同步session state
-        st.session_state.messages = self.model.get_messages()
