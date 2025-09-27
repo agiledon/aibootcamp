@@ -23,6 +23,16 @@ class DocumentChatView:
             page_icon="📚",
             layout="wide"
         )
+        
+        # 添加自定义CSS样式
+        st.markdown("""
+        <style>
+        /* 修改进度条颜色为绿色 */
+        .stProgress > div > div > div > div {
+            background-color: #28a745 !important;
+        }
+        
+        """, unsafe_allow_html=True)
     
     def render_sidebar(self) -> Optional[Any]:
         """
@@ -100,7 +110,7 @@ class DocumentChatView:
                 # 显示PDF预览
                 st.markdown("### 文档预览")
                 pdf_display = f"""
-                <iframe src="data:application/pdf;base64,{base64_pdf}" 
+                <iframe src="data:application/pdf;base64,{base64_pdf}#toolbar=0&navpanes=0&scrollbar=0&view=FitH" 
                         width="100%" 
                         height="500" 
                         type="application/pdf"
@@ -213,6 +223,51 @@ class DocumentChatView:
     def show_processing_status(self, message: str):
         """显示处理状态"""
         st.write(message)
+    
+    def show_progress_bar(self, progress: int, message: str):
+        """
+        显示单个动态进度条
+        
+        Args:
+            progress: 进度百分比 (0-100)
+            message: 进度消息
+        """
+        # 创建进度条容器
+        progress_container = st.container()
+        
+        with progress_container:
+            # 显示动态百分比
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.markdown(f"<div style='text-align: center; font-size: 18px; font-weight: bold; color: #28a745;'>{progress}%</div>", unsafe_allow_html=True)
+            
+            # 显示绿色进度条
+            progress_bar = st.progress(progress / 100)
+            
+            # 当进度达到100%时显示完成信息
+            if progress == 100:
+                st.success("✅ 文档加载完成")
+    
+    def create_progress_container(self):
+        """创建进度显示容器"""
+        return st.container()
+    
+    def display_sidebar_progress(self, progress: int, message: str):
+        """
+        在侧边栏顶部显示单个动态进度条
+        
+        Args:
+            progress: 进度百分比 (0-100)
+            message: 进度消息
+        """
+        with st.sidebar:
+            # 使用session state来存储进度占位符
+            if 'progress_placeholder' not in st.session_state:
+                st.session_state.progress_placeholder = st.empty()
+            
+            # 在占位符中显示进度条
+            with st.session_state.progress_placeholder.container():
+                self.show_progress_bar(progress, message)
     
     def show_document_stats(self, doc_count: int, total_chars: int):
         """显示文档统计信息"""

@@ -73,15 +73,18 @@ class DocumentChatController:
             st.session_state.file_processed):
             # 文件已经处理过，直接使用缓存的查询引擎
             self.current_query_engine = st.session_state.current_query_engine
-            self.view.show_success_message("文档已加载，可以直接提问！")
+            # 显示缓存文件的进度条
+            self.view.display_sidebar_progress(100, "使用缓存文件")
             self.view.display_document_preview(uploaded_file, max_pages=5)
             return True
         
-        # 显示处理状态
-        self.view.show_processing_status("正在处理文档...")
+        def progress_callback(progress: int, message: str):
+            """进度回调函数"""
+            # 在侧边栏显示动态进度
+            self.view.display_sidebar_progress(progress, message)
         
         # 处理文档文件
-        success, message, query_engine = self.model.process_document_file(uploaded_file)
+        success, message, query_engine = self.model.process_document_file(uploaded_file, progress_callback)
         
         if success:
             self.current_query_engine = query_engine
@@ -92,10 +95,12 @@ class DocumentChatController:
             st.session_state.file_processed = True
             st.session_state.current_file_name = uploaded_file.name
             
-            self.view.show_success_message("文档处理完成！")
+            # 成功提示已经在进度条中显示，不需要额外的成功消息
             self.view.display_document_preview(uploaded_file, max_pages=5)
             return True
         else:
+            # 显示错误信息
+            self.view.display_sidebar_progress(0, f"处理失败: {message}")
             self.view.show_error_message(message)
             self.view.stop_app()
             return False

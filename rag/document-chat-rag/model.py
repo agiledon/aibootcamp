@@ -94,17 +94,21 @@ class DocumentChatModel:
             # 使用专门的加载器
             return loader.load_data(file=file_path)
     
-    def process_document_file(self, uploaded_file) -> tuple[bool, str, Optional[Any]]:
+    def process_document_file(self, uploaded_file, progress_callback=None) -> tuple[bool, str, Optional[Any]]:
         """
         处理上传的文档文件（支持PDF、Word、Markdown、CSV、TXT）
         
         Args:
             uploaded_file: Streamlit上传的文件对象
+            progress_callback: 进度回调函数，接收(progress, message)参数
             
         Returns:
             tuple: (success, message, query_engine)
         """
         try:
+            if progress_callback:
+                progress_callback(0, "开始处理文档...")
+            
             # 获取文件扩展名
             file_extension = os.path.splitext(uploaded_file.name)[1]
             supported_extensions = ['.pdf', '.docx', '.doc', '.md', '.markdown', '.csv', '.txt']
@@ -123,11 +127,17 @@ class DocumentChatModel:
                 
                 # 检查缓存
                 if file_key in self.file_cache:
+                    if progress_callback:
+                        progress_callback(100, "使用缓存文件")
                     return True, "文件已缓存，直接使用", self.file_cache[file_key]
                 
                 # 检查文件是否存在
                 if not os.path.exists(file_path):
                     return False, "无法找到上传的文件", None
+                
+                # 阶段1：解析文档 (0% - 20%)
+                if progress_callback:
+                    progress_callback(5, "正在解析文档...")
                 
                 # 根据文件类型加载文档
                 docs = self._load_document(file_path, file_extension)
@@ -139,8 +149,15 @@ class DocumentChatModel:
                 total_chars = sum(len(doc.text) for doc in docs)
                 print(f"成功加载 {len(docs)} 个文档片段，总字符数: {total_chars}")
                 
+                if progress_callback:
+                    progress_callback(20, "文档解析完成")
+                
                 # 设置嵌入模型
                 Settings.embed_model = self.embed_model
+                
+                # 阶段2：生成向量索引 (20% - 80%)
+                if progress_callback:
+                    progress_callback(30, "正在生成向量索引...")
                 
                 # 创建向量索引，设置合适的文档分割参数
                 from llama_index.core.node_parser import SentenceSplitter
@@ -157,6 +174,13 @@ class DocumentChatModel:
                     transformations=[text_splitter],
                     show_progress=True
                 )
+                
+                if progress_callback:
+                    progress_callback(80, "向量索引生成完成")
+                
+                # 阶段3：配置查询引擎 (80% - 100%)
+                if progress_callback:
+                    progress_callback(85, "正在配置查询引擎...")
                 
                 # 设置LLM
                 Settings.llm = self.llm
@@ -190,6 +214,9 @@ class DocumentChatModel:
                 # 缓存查询引擎
                 self.file_cache[file_key] = query_engine
                 
+                if progress_callback:
+                    progress_callback(100, "文档加载完成")
+                
                 file_type_name = {
                     '.pdf': 'PDF',
                     '.docx': 'Word',
@@ -203,6 +230,8 @@ class DocumentChatModel:
                 return True, f"{file_type_name}文档处理完成", query_engine
                 
         except Exception as e:
+            if progress_callback:
+                progress_callback(0, f"处理失败: {str(e)}")
             return False, f"处理文件时发生错误: {e}", None
     
     def query_document(self, query_engine, prompt: str):
