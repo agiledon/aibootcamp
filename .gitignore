@@ -166,3 +166,6 @@ llm/qlora-example/cache/
 
 # Document summary RAG city index directory
 rag/document-summary-rag/city_index/
+
+# KFlow RAG volumes directory
+rag/document-chat-rag/volumes/
