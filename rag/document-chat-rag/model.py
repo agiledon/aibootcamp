@@ -12,6 +12,7 @@ from llama_index.core import Settings, VectorStoreIndex, PromptTemplate
 from llama_index.core.readers import SimpleDirectoryReader
 from llama_index.llms.deepseek import DeepSeek
 from llama_index.embeddings.ollama import OllamaEmbedding
+from milvus_repository import MilvusRepository
 
 
 class DocumentChatModel:
@@ -23,6 +24,7 @@ class DocumentChatModel:
         self.messages: List[Dict[str, str]] = []
         self._llm = None
         self._embed_model = None
+        self.milvus_repo = MilvusRepository(collection_name="kflow")
         
     @property
     def llm(self):
@@ -155,28 +157,25 @@ class DocumentChatModel:
                 # 设置嵌入模型
                 Settings.embed_model = self.embed_model
                 
-                # 阶段2：生成向量索引 (20% - 80%)
+                # 阶段2：存储到Milvus (20% - 80%)
                 if progress_callback:
-                    progress_callback(30, "正在生成向量索引...")
+                    progress_callback(30, "正在存储到Milvus向量数据库...")
                 
-                # 创建向量索引，设置合适的文档分割参数
-                from llama_index.core.node_parser import SentenceSplitter
+                # 设置嵌入模型
+                Settings.embed_model = self.embed_model
                 
-                # 设置文档分割器，避免过度分割
-                text_splitter = SentenceSplitter(
-                    chunk_size=1024,
-                    chunk_overlap=200,
-                    separator=" "
-                )
-                
-                index = VectorStoreIndex.from_documents(
+                # 存储文档到Milvus
+                storage_success = self.milvus_repo.store_documents(
                     docs, 
-                    transformations=[text_splitter],
-                    show_progress=True
+                    uploaded_file.name, 
+                    progress_callback
                 )
                 
+                if not storage_success:
+                    return False, "存储到Milvus失败", None
+                
                 if progress_callback:
-                    progress_callback(80, "向量索引生成完成")
+                    progress_callback(80, "Milvus存储完成")
                 
                 # 阶段3：配置查询引擎 (80% - 100%)
                 if progress_callback:
@@ -185,8 +184,11 @@ class DocumentChatModel:
                 # 设置LLM
                 Settings.llm = self.llm
                 
-                # 创建查询引擎
-                query_engine = index.as_query_engine(streaming=True)
+                # 从Milvus获取查询引擎（从整个集合中检索）
+                query_engine = self.milvus_repo.get_query_engine(streaming=True)
+                
+                if query_engine is None:
+                    return False, "创建查询引擎失败", None
                 
                 # 自定义提示模板
                 qa_prompt_tmpl_str = (
@@ -236,7 +238,7 @@ class DocumentChatModel:
     
     def query_document(self, query_engine, prompt: str):
         """
-        查询文档
+        查询文档（从Milvus集合中检索）
         
         Args:
             query_engine: 查询引擎
@@ -246,7 +248,10 @@ class DocumentChatModel:
             流式响应生成器
         """
         if query_engine is None:
-            return None
+            # 如果查询引擎为空，尝试从Milvus重新获取
+            query_engine = self.milvus_repo.get_query_engine(streaming=True)
+            if query_engine is None:
+                return None
         
         try:
             streaming_response = query_engine.query(prompt)
@@ -270,3 +275,11 @@ class DocumentChatModel:
     def get_session_id(self) -> str:
         """获取会话ID"""
         return self.session_id
+    
+    def get_milvus_info(self) -> Dict[str, Any]:
+        """获取Milvus集合信息"""
+        return self.milvus_repo.get_collection_info()
+    
+    def clear_milvus_collection(self):
+        """清空Milvus集合"""
+        self.milvus_repo.clear_collection()
