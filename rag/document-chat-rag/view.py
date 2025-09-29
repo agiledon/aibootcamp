@@ -10,7 +10,7 @@ from document_converter import DocumentConverter
 
 
 class DocumentChatView:
-    """文档聊天视图类，处理所有UI相关的操作"""
+    """KFlow RAG视图类，处理所有UI相关的操作"""
     
     def __init__(self):
         self.setup_page_config()
@@ -19,7 +19,7 @@ class DocumentChatView:
     def setup_page_config(self):
         """设置页面配置"""
         st.set_page_config(
-            page_title="文档聊天RAG",
+            page_title="KFlow RAG",
             page_icon="📚",
             layout="wide"
         )

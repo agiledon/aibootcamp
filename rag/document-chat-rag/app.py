@@ -1,7 +1,7 @@
 # 运行命令：uv run streamlit run app.py
 
 """
-主应用文件 - 使用MVP模式重构的文档聊天RAG应用
+主应用文件 - KFlow RAG智能文档问答系统
 """
 
 from controller import DocumentChatController

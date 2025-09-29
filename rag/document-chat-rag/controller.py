@@ -10,7 +10,7 @@ from view import DocumentChatView
 
 
 class DocumentChatController:
-    """文档聊天控制器类，协调Model和View之间的交互"""
+    """KFlow RAG控制器类，协调Model和View之间的交互"""
     
     def __init__(self):
         self.model = DocumentChatModel()

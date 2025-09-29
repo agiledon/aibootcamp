@@ -16,7 +16,7 @@ from milvus_repository import MilvusRepository
 
 
 class DocumentChatModel:
-    """文档聊天模型类，处理PDF文档和LLM交互的核心业务逻辑"""
+    """KFlow RAG模型类，处理多种文档格式和LLM交互的核心业务逻辑"""
     
     def __init__(self):
         self.session_id = str(uuid.uuid4())
