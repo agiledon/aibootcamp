@@ -14,6 +14,7 @@ from llama_index.core.readers import SimpleDirectoryReader
 from llama_index.llms.deepseek import DeepSeek
 from llama_index.embeddings.ollama import OllamaEmbedding
 from chroma_repository import ChromaRepository
+from llm_service import ModelService
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -26,33 +27,22 @@ class DocumentChatModel:
         self.session_id = str(uuid.uuid4())
         self.file_cache: Dict[str, Any] = {}
         self.messages: List[Dict[str, str]] = []
-        self._llm = None
-        self._embed_model = None
+        
+        # 初始化服务
+        self.model_service = ModelService()
         self.chroma_repo = ChromaRepository(collection_name="kflow")
+        
+        logger.info("DocumentChatModel初始化完成")
         
     @property
     def llm(self):
-        """懒加载LLM模型"""
-        if self._llm is None:
-            self._llm = DeepSeek(
-                model="deepseek-chat", 
-                temperature=0.1, 
-                max_tokens=1000, 
-                timeout=60, 
-                max_retries=2
-            )
-        return self._llm
+        """获取LLM模型"""
+        return self.model_service.get_llm()
     
     @property
     def embed_model(self):
-        """懒加载嵌入模型"""
-        if self._embed_model is None:
-            self._embed_model = OllamaEmbedding(
-                model_name="nomic-embed-text",
-                request_timeout=30,
-                keep_alive="1m"
-            )
-        return self._embed_model
+        """获取嵌入模型"""
+        return self.model_service.get_embed_model()
     
     def _get_file_loader(self, file_extension: str):
         """
@@ -172,6 +162,7 @@ class DocumentChatModel:
                 storage_success = self.chroma_repo.store_documents(
                     docs, 
                     uploaded_file.name, 
+                    self.embed_model,  # 传入嵌入模型
                     progress_callback
                 )
                 
@@ -181,12 +172,17 @@ class DocumentChatModel:
                 if progress_callback:
                     progress_callback(80, "ChromaDB存储完成")
                 
-                # 阶段3：配置查询引擎 (80% - 100%)
+                # 阶段3：更新向量存储 (80% - 100%)
                 if progress_callback:
-                    progress_callback(85, "正在配置查询引擎...")
+                    progress_callback(85, "正在更新向量存储...")
                 
-                # 设置LLM
-                Settings.llm = self.llm
+                # 更新向量存储以包含新文档
+                update_success = self.chroma_repo.update_vector_store_with_new_documents(
+                    self.embed_model
+                )
+                
+                if not update_success:
+                    logger.warning("向量存储更新失败，但不影响基本功能")
                 
                 # 从ChromaDB获取查询引擎（从整个集合中检索）
                 query_engine = self.chroma_repo.get_query_engine(streaming=True)
@@ -294,6 +290,18 @@ class DocumentChatModel:
                 logger.error(f"响应对象属性: {dir(streaming_response)}")
                 return None
                 
+        except IndexError as e:
+            if "pop from empty list" in str(e):
+                logger.error(f"❌ 查询时发生回调管理器错误: {e}")
+                logger.error("❌ 这通常是由于 llama_index 回调管理器状态不一致导致的")
+                logger.error("❌ 建议重启应用程序以重置回调管理器状态")
+                return None
+            else:
+                logger.error(f"❌ 查询时发生索引错误: {e}")
+                logger.error(f"❌ 错误类型: {type(e).__name__}")
+                import traceback
+                logger.error(f"❌ 详细错误堆栈: {traceback.format_exc()}")
+                return None
         except Exception as e:
             logger.error(f"❌ 查询时发生错误: {e}")
             logger.error(f"❌ 错误类型: {type(e).__name__}")
@@ -315,20 +323,30 @@ class DocumentChatModel:
         try:
             if search_scope == "全知识库":
                 # 全知识库检索
-                return self.chroma_repo.get_query_engine(streaming=True)
+                logger.info("创建全知识库查询引擎")
+                return self.chroma_repo.get_query_engine(
+                    file_names=None,  # None表示全知识库
+                    llm=self.llm,
+                    streaming=True
+                )
             elif search_scope == "已选文档":
                 # 特定文档检索
                 if selected_documents and len(selected_documents) > 0:
                     file_names = [doc['file_name'] for doc in selected_documents]
-                    return self.chroma_repo.get_query_engine(streaming=True, file_names=file_names)
+                    logger.info(f"创建特定文档查询引擎，文件: {file_names}")
+                    return self.chroma_repo.get_query_engine(
+                        file_names=file_names,
+                        llm=self.llm,
+                        streaming=True
+                    )
                 else:
-                    print("未选择任何文档")
+                    logger.warning("未选择任何文档")
                     return None
             else:
-                print(f"未知的检索范围: {search_scope}")
+                logger.error(f"未知的检索范围: {search_scope}")
                 return None
         except Exception as e:
-            print(f"获取查询引擎失败: {e}")
+            logger.error(f"获取查询引擎失败: {e}")
             return None
     
     def add_message(self, role: str, content: str):

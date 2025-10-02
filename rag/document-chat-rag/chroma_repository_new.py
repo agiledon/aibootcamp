@@ -13,7 +13,7 @@ from llama_index.core.schema import Document
 from llama_index.core.node_parser import SentenceSplitter
 import chromadb
 
-from custom_query_engine import FilteredQueryEngine
+from .custom_query_engine import FilteredQueryEngine
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -243,17 +243,12 @@ class ChromaRepository:
             # 创建自定义过滤查询引擎
             try:
                 logger.info("开始创建自定义过滤查询引擎...")
-                # 创建一个新的回调管理器，避免回调栈状态问题
-                from llama_index.core.callbacks import CallbackManager
-                callback_manager = CallbackManager()
-                
                 query_engine = FilteredQueryEngine(
                     index=self.index,
                     target_files=file_names,
                     similarity_top_k=5,
                     streaming=streaming,
-                    llm=llm,
-                    callback_manager=callback_manager
+                    llm=llm
                 )
                 logger.info("✅ 自定义过滤查询引擎创建成功")
                 return query_engine
