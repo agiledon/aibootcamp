@@ -4,9 +4,13 @@ Controller类 - 处理用户请求，协调View和Model之间的交互
 """
 
 import gc
-from typing import Optional, Any
+import logging
+from typing import Optional, Any, List
 from model import DocumentChatModel
 from view import DocumentChatView
+
+# 配置日志
+logger = logging.getLogger(__name__)
 
 
 class DocumentChatController:
@@ -35,6 +39,8 @@ class DocumentChatController:
             st.session_state.file_processed = False
             st.session_state.current_file_name = None
             st.session_state.need_refresh_documents = False
+            st.session_state.search_scope = "全知识库"
+            st.session_state.selected_documents = []
     
     def _restore_state(self):
         """从session state恢复状态"""
@@ -109,32 +115,94 @@ class DocumentChatController:
             self.view.stop_app()
             return False
     
-    def handle_chat_input(self, user_input: str) -> bool:
+    def handle_chat_input(self, user_input: str, search_scope: str = None, selected_documents: List = None) -> bool:
         """
         处理用户聊天输入
         
         Args:
             user_input: 用户输入的消息
+            search_scope: 检索范围
+            selected_documents: 选中的文档列表
             
         Returns:
             bool: 处理是否成功
         """
-        if not user_input or not user_input.strip():
-            return False
+        import streamlit as st
         
-        if self.current_query_engine is None:
-            self.view.show_warning_message("请先上传文档")
+        if not user_input or not user_input.strip():
             return False
         
         # 添加用户消息到历史
         self.model.add_message("user", user_input)
         self.view.display_user_message(user_input)
         
-        # 显示助手回复
-        response_generator = self.model.query_document(self.current_query_engine, user_input)
+        # 检查是否有可用的查询引擎
+        query_engine = None
         
-        if response_generator is None:
-            self.view.show_error_message("查询失败，请重试")
+        # 根据检索范围获取查询引擎
+        if search_scope == "已选文档":
+            # 如果选择"已选文档"但没有选择具体文档，且当前有上传的文件，则使用当前文件
+            if (not selected_documents or len(selected_documents) == 0) and hasattr(st.session_state, 'current_file_name') and st.session_state.current_file_name:
+                # 使用当前上传的文件
+                current_file_doc = [{"file_name": st.session_state.current_file_name}]
+                query_engine = self.model.get_query_engine_for_scope(search_scope, current_file_doc)
+            else:
+                # 使用选中的文档
+                query_engine = self.model.get_query_engine_for_scope(search_scope, selected_documents)
+        else:
+            # 全知识库检索
+            query_engine = self.model.get_query_engine_for_scope("全知识库")
+        
+        if query_engine is None:
+            # 提供更详细的错误信息和解决方案
+            error_message = ""
+            if search_scope == "已选文档":
+                if not selected_documents or len(selected_documents) == 0:
+                    error_message = "请先选择要检索的文档或上传文档"
+                else:
+                    error_message = "选中的文档无法创建查询引擎，可能是ChromaDB连接或嵌入模型配置问题"
+            else:
+                # 检查知识库状态
+                existing_docs = self.model.get_existing_documents()
+                if not existing_docs or len(existing_docs) == 0:
+                    error_message = "知识库中没有文档，请先上传文档"
+                else:
+                    error_message = "无法连接到知识库，请检查ChromaDB服务状态和嵌入模型配置"
+            
+            self.view.show_warning_message(error_message)
+            
+            # 添加错误消息到聊天历史
+            self.model.add_message("assistant", f"❌ {error_message}")
+            st.session_state.messages = self.model.get_messages()
+            return False
+        
+        # 显示助手回复
+        try:
+            logger.info(f"🔍 开始查询文档，用户输入: {user_input}")
+            response_generator = self.model.query_document(query_engine, user_input)
+            
+            if response_generator is None:
+                error_message = "查询失败，可能是文档处理或LLM服务问题，请重试"
+                logger.error(f"❌ 查询失败: {error_message}")
+                self.view.show_error_message(error_message)
+                # 添加错误消息到聊天历史
+                self.model.add_message("assistant", f"❌ {error_message}")
+                st.session_state.messages = self.model.get_messages()
+                return False
+            
+            logger.info("✅ 查询成功，开始显示响应")
+            
+        except Exception as e:
+            error_message = f"查询过程中发生异常: {str(e)}"
+            logger.error(f"❌ 查询过程中发生异常: {e}")
+            logger.error(f"❌ 异常类型: {type(e).__name__}")
+            import traceback
+            logger.error(f"❌ 详细错误堆栈: {traceback.format_exc()}")
+            
+            self.view.show_error_message(error_message)
+            # 添加错误消息到聊天历史
+            self.model.add_message("assistant", f"❌ {error_message}")
+            st.session_state.messages = self.model.get_messages()
             return False
         
         # 显示流式响应
@@ -144,7 +212,6 @@ class DocumentChatController:
         self.model.add_message("assistant", full_response)
         
         # 同步状态到session state
-        import streamlit as st
         st.session_state.messages = self.model.get_messages()
         
         return True
@@ -175,12 +242,25 @@ class DocumentChatController:
         # 获取已有文档列表
         existing_documents = self.model.get_existing_documents()
         
+        # 检查服务状态
+        chroma_status, ollama_status = self.model.check_services_status()
+        
         # 如果刚刚上传了文件，显示成功消息并清除刷新标志
         if need_refresh:
             st.session_state.need_refresh_documents = False
             # 在侧边栏顶部显示成功消息
             with st.sidebar:
                 st.success("✅ 文档已成功添加到知识库！")
+        
+        # 显示服务状态
+        self.view.show_service_status(chroma_status, ollama_status)
+        
+        # 渲染检索范围控制
+        search_scope, selected_documents = self.view.render_search_scope_control(existing_documents)
+        
+        # 保存检索范围状态
+        st.session_state.search_scope = search_scope
+        st.session_state.selected_documents = selected_documents
         
         # 渲染侧边栏并处理文件上传
         uploaded_file = self.view.render_sidebar(existing_documents)
@@ -201,5 +281,5 @@ class DocumentChatController:
         user_input = self.view.render_chat_input()
         
         if user_input:
-            self.handle_chat_input(user_input)
+            self.handle_chat_input(user_input, search_scope, selected_documents)
             st.rerun()

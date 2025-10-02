@@ -6,13 +6,17 @@ Model类 - 处理业务逻辑和数据管理
 import os
 import tempfile
 import uuid
+import logging
 from typing import List, Dict, Any, Optional
 from llama_index.readers.file import PDFReader, DocxReader, MarkdownReader, CSVReader
 from llama_index.core import Settings, VectorStoreIndex, PromptTemplate
 from llama_index.core.readers import SimpleDirectoryReader
 from llama_index.llms.deepseek import DeepSeek
 from llama_index.embeddings.ollama import OllamaEmbedding
-from milvus_repository import MilvusRepository
+from chroma_repository import ChromaRepository
+
+# 配置日志
+logger = logging.getLogger(__name__)
 
 
 class DocumentChatModel:
@@ -24,7 +28,7 @@ class DocumentChatModel:
         self.messages: List[Dict[str, str]] = []
         self._llm = None
         self._embed_model = None
-        self.milvus_repo = MilvusRepository(collection_name="kflow")
+        self.chroma_repo = ChromaRepository(collection_name="kflow")
         
     @property
     def llm(self):
@@ -157,25 +161,25 @@ class DocumentChatModel:
                 # 设置嵌入模型
                 Settings.embed_model = self.embed_model
                 
-                # 阶段2：存储到Milvus (20% - 80%)
+                # 阶段2：存储到ChromaDB (20% - 80%)
                 if progress_callback:
-                    progress_callback(30, "正在存储到Milvus向量数据库...")
+                    progress_callback(30, "正在存储到ChromaDB向量数据库...")
                 
                 # 设置嵌入模型
                 Settings.embed_model = self.embed_model
                 
-                # 存储文档到Milvus
-                storage_success = self.milvus_repo.store_documents(
+                # 存储文档到ChromaDB
+                storage_success = self.chroma_repo.store_documents(
                     docs, 
                     uploaded_file.name, 
                     progress_callback
                 )
                 
                 if not storage_success:
-                    return False, "存储到Milvus失败", None
+                    return False, "存储到ChromaDB失败", None
                 
                 if progress_callback:
-                    progress_callback(80, "Milvus存储完成")
+                    progress_callback(80, "ChromaDB存储完成")
                 
                 # 阶段3：配置查询引擎 (80% - 100%)
                 if progress_callback:
@@ -184,8 +188,8 @@ class DocumentChatModel:
                 # 设置LLM
                 Settings.llm = self.llm
                 
-                # 从Milvus获取查询引擎（从整个集合中检索）
-                query_engine = self.milvus_repo.get_query_engine(streaming=True)
+                # 从ChromaDB获取查询引擎（从整个集合中检索）
+                query_engine = self.chroma_repo.get_query_engine(streaming=True)
                 
                 if query_engine is None:
                     return False, "创建查询引擎失败", None
@@ -248,16 +252,83 @@ class DocumentChatModel:
             流式响应生成器
         """
         if query_engine is None:
-            # 如果查询引擎为空，尝试从Milvus重新获取
-            query_engine = self.milvus_repo.get_query_engine(streaming=True)
+            # 如果查询引擎为空，尝试从ChromaDB重新获取
+            query_engine = self.chroma_repo.get_query_engine(streaming=True)
             if query_engine is None:
                 return None
         
         try:
+            logger.info(f"🔍 开始执行查询，提示: {prompt[:50]}...")
             streaming_response = query_engine.query(prompt)
-            return streaming_response.response_gen
+            
+            if streaming_response is None:
+                logger.error("❌ 查询引擎返回空响应")
+                return None
+            
+            # 如果有目标文件过滤需求，在响应中进行过滤
+            if hasattr(query_engine, 'target_files') and query_engine.target_files:
+                logger.info(f"🔍 过滤特定文件: {query_engine.target_files}")
+                if hasattr(streaming_response, 'source_nodes') and streaming_response.source_nodes:
+                    filtered_nodes = []
+                    for node in streaming_response.source_nodes:
+                        if hasattr(node, 'metadata') and node.metadata:
+                            file_name = node.metadata.get('file_name', '')
+                            if file_name in query_engine.target_files:
+                                filtered_nodes.append(node)
+                                logger.info(f"✅ 保留节点，文件: {file_name}")
+                            else:
+                                logger.info(f"❌ 过滤节点，文件: {file_name}")
+                        else:
+                            # 如果没有元数据，也保留节点
+                            filtered_nodes.append(node)
+                    
+                    streaming_response.source_nodes = filtered_nodes
+                    logger.info(f"✅ 过滤完成，保留 {len(filtered_nodes)} 个节点")
+                
+            if hasattr(streaming_response, 'response_gen'):
+                logger.info("✅ 查询成功，返回流式响应")
+                return streaming_response.response_gen
+            else:
+                logger.error("❌ 查询响应没有response_gen属性")
+                logger.error(f"响应对象类型: {type(streaming_response)}")
+                logger.error(f"响应对象属性: {dir(streaming_response)}")
+                return None
+                
         except Exception as e:
-            print(f"查询时发生错误: {e}")
+            logger.error(f"❌ 查询时发生错误: {e}")
+            logger.error(f"❌ 错误类型: {type(e).__name__}")
+            import traceback
+            logger.error(f"❌ 详细错误堆栈: {traceback.format_exc()}")
+            return None
+    
+    def get_query_engine_for_scope(self, search_scope: str, selected_documents: List[Dict[str, Any]] = None):
+        """
+        根据检索范围获取查询引擎
+        
+        Args:
+            search_scope: 检索范围 ("全知识库" 或 "已选文档")
+            selected_documents: 选中的文档列表
+            
+        Returns:
+            查询引擎对象
+        """
+        try:
+            if search_scope == "全知识库":
+                # 全知识库检索
+                return self.chroma_repo.get_query_engine(streaming=True)
+            elif search_scope == "已选文档":
+                # 特定文档检索
+                if selected_documents and len(selected_documents) > 0:
+                    file_names = [doc['file_name'] for doc in selected_documents]
+                    return self.chroma_repo.get_query_engine(streaming=True, file_names=file_names)
+                else:
+                    print("未选择任何文档")
+                    return None
+            else:
+                print(f"未知的检索范围: {search_scope}")
+                return None
+        except Exception as e:
+            print(f"获取查询引擎失败: {e}")
             return None
     
     def add_message(self, role: str, content: str):
@@ -276,14 +347,49 @@ class DocumentChatModel:
         """获取会话ID"""
         return self.session_id
     
-    def get_milvus_info(self) -> Dict[str, Any]:
-        """获取Milvus集合信息"""
-        return self.milvus_repo.get_collection_info()
+    def get_chroma_info(self) -> Dict[str, Any]:
+        """获取ChromaDB集合信息"""
+        return self.chroma_repo.get_collection_info()
     
     def get_existing_documents(self) -> List[Dict[str, Any]]:
         """获取已有文档列表"""
-        return self.milvus_repo.get_existing_documents()
+        # 从ChromaDB集合信息中获取文档列表，包含完整的元数据
+        collection_info = self.chroma_repo.get_collection_info()
+        if collection_info.get("status") == "available" and collection_info.get("file_info"):
+            documents = []
+            file_info = collection_info["file_info"]
+            for file_name, info in file_info.items():
+                documents.append({
+                    "file_name": file_name,
+                    "file_type": info["file_type"],
+                    "document_count": info["count"]
+                })
+            return documents
+        return []
     
-    def clear_milvus_collection(self):
-        """清空Milvus集合"""
-        self.milvus_repo.clear_collection()
+    def clear_chroma_collection(self):
+        """清空ChromaDB集合"""
+        self.chroma_repo.clear_collection()
+    
+    def check_services_status(self):
+        """
+        检查服务状态
+        
+        Returns:
+            tuple: (chroma_status, ollama_status)
+        """
+        # 检查ChromaDB状态
+        chroma_info = self.chroma_repo.get_collection_info()
+        chroma_status = chroma_info.get("status", "error")
+        
+        # 检查Ollama状态
+        ollama_status = "unavailable"
+        try:
+            import requests
+            response = requests.get("http://localhost:11434/api/tags", timeout=5)
+            if response.status_code == 200:
+                ollama_status = "available"
+        except:
+            ollama_status = "unavailable"
+        
+        return chroma_status, ollama_status

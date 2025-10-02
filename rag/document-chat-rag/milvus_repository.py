@@ -171,6 +171,21 @@ class MilvusRepository:
                 
             print("正在创建LlamaIndex向量存储...")
             
+            # 检查Milvus连接是否可用
+            if not self.is_available or not connections.has_connection("default"):
+                print("Milvus连接不可用，无法创建LlamaIndex向量存储")
+                return False
+            
+            # 检查集合是否存在且已加载
+            if not utility.has_collection(self.collection_name):
+                print(f"集合 {self.collection_name} 不存在，无法创建LlamaIndex向量存储")
+                return False
+            
+            # 确保集合已加载
+            if self.collection is None:
+                self.collection = Collection(self.collection_name)
+            self.collection.load()
+            
             # 创建Milvus向量存储，使用正确的URI格式
             self.vector_store = MilvusVectorStore(
                 dim=768,
@@ -191,9 +206,14 @@ class MilvusRepository:
             print(f"创建LlamaIndex向量存储失败: {e}")
             if "llama-index-embeddings-openai" in str(e):
                 print("缺少llama-index-embeddings-openai依赖，将使用内存存储模式")
+            elif "Connection refused" in str(e) or "ConnectionError" in str(e):
+                print("无法连接到Milvus服务器，将使用内存存储模式")
+            elif "Collection not found" in str(e):
+                print("集合不存在，将使用内存存储模式")
             else:
-                print("将使用内存存储模式进行查询")
-            # 即使LlamaIndex向量存储失败，我们仍然可以使用同步连接
+                print(f"其他错误: {e}，将使用内存存储模式")
+            
+            # 清理失败的向量存储
             self.vector_store = None
             self.storage_context = None
             return False
@@ -406,45 +426,88 @@ class MilvusRepository:
         except Exception as e:
             print(f"删除文件文档时出错: {e}")
     
-    def get_query_engine(self, streaming: bool = True):
+    def get_query_engine(self, streaming: bool = True, file_names: List[str] = None):
         """
         获取查询引擎，用于RAG检索
         
         Args:
             streaming: 是否启用流式响应
+            file_names: 指定要检索的文件名列表，None表示检索所有文件
             
         Returns:
             查询引擎对象
         """
         try:
+            # 如果没有索引，尝试创建或重新创建
             if self.index is None:
                 if self.is_available:
                     # 尝试创建LlamaIndex向量存储（如果还没有创建）
                     if self.vector_store is None:
                         if not self._create_llamaindex_vector_store():
-                            print("LlamaIndex向量存储创建失败，无法创建查询引擎")
+                            print("LlamaIndex向量存储创建失败，尝试使用内存存储模式")
+                            # 不直接返回None，而是尝试其他方式
                             return None
                     
-                    # Milvus可用且LlamaIndex向量存储可用，从向量存储重新创建
-                    self.index = VectorStoreIndex.from_vector_store(
-                        self.vector_store,
-                        storage_context=self.storage_context
-                    )
+                    try:
+                        # Milvus可用且LlamaIndex向量存储可用，从向量存储重新创建
+                        self.index = VectorStoreIndex.from_vector_store(
+                            self.vector_store,
+                            storage_context=self.storage_context
+                        )
+                        print("成功从Milvus向量存储创建索引")
+                    except Exception as e:
+                        print(f"从Milvus向量存储创建索引失败: {e}")
+                        # 尝试检查是否有文档存在
+                        try:
+                            if self.collection:
+                                self.collection.load()
+                                # 查询集合中是否有数据
+                                results = self.collection.query(
+                                    expr="",  # 空表达式表示查询所有
+                                    output_fields=["file_name"],
+                                    limit=1
+                                )
+                                if len(results) == 0:
+                                    print("Milvus集合中没有文档数据")
+                                    return None
+                                else:
+                                    print(f"Milvus集合中有 {len(results)} 条记录，但无法创建索引")
+                                    return None
+                        except Exception as query_e:
+                            print(f"检查Milvus集合数据失败: {query_e}")
+                        return None
                 else:
-                    # Milvus不可用，返回None
+                    # Milvus不可用
                     print("Milvus不可用，无法创建查询引擎")
                     return None
             
-            # 创建查询引擎，从整个集合中检索
-            query_engine = self.index.as_query_engine(
-                streaming=streaming,
-                similarity_top_k=5  # 检索前5个最相关的文档片段
-            )
-            
-            return query_engine
+            # 创建查询引擎
+            try:
+                if file_names and len(file_names) > 0:
+                    # 指定文件名的检索
+                    print(f"创建针对特定文件的查询引擎: {file_names}")
+                    query_engine = self.index.as_query_engine(
+                        streaming=streaming,
+                        similarity_top_k=5,
+                        filters={"file_name": {"$in": file_names}}
+                    )
+                else:
+                    # 从整个集合中检索
+                    print("创建全知识库查询引擎")
+                    query_engine = self.index.as_query_engine(
+                        streaming=streaming,
+                        similarity_top_k=5  # 检索前5个最相关的文档片段
+                    )
+                
+                print("查询引擎创建成功")
+                return query_engine
+                
+            except Exception as e:
+                print(f"创建查询引擎时发生错误: {e}")
+                return None
             
         except Exception as e:
-            print(f"创建查询引擎失败: {e}")
+            print(f"获取查询引擎失败: {e}")
             return None
     
     def get_collection_info(self) -> Dict[str, Any]:
