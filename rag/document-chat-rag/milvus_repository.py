@@ -85,35 +85,54 @@ class MilvusRepository:
         try:
             # 检查集合是否存在
             if utility.has_collection(self.collection_name):
-                print(f"集合 {self.collection_name} 已存在")
-                self.collection = Collection(self.collection_name)
-            else:
-                print(f"创建新集合: {self.collection_name}")
+                print(f"集合 {self.collection_name} 已存在，检查schema兼容性...")
+                existing_collection = Collection(self.collection_name)
                 
-                # 定义字段
-                fields = [
-                    FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
-                    FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=65535),
-                    FieldSchema(name="file_name", dtype=DataType.VARCHAR, max_length=255),
-                    FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=768)
-                ]
+                # 检查现有schema是否与我们的期望匹配
+                schema_fields = existing_collection.schema.fields
+                field_names = [field.name for field in schema_fields]
                 
-                # 创建集合模式
-                schema = CollectionSchema(fields, f"Collection for {self.collection_name}")
-                
-                # 创建集合
-                self.collection = Collection(self.collection_name, schema)
-                
-                # 创建索引
-                index_params = {
-                    "metric_type": "L2",
-                    "index_type": "IVF_FLAT",
-                    "params": {"nlist": 128}
-                }
-                self.collection.create_index("embedding", index_params)
-                
-                print(f"集合 {self.collection_name} 创建成功")
-                
+                expected_fields = ["id", "text", "file_name", "embedding"]
+                if field_names != expected_fields:
+                    print(f"现有集合schema不匹配，重新创建集合...")
+                    print(f"现有字段: {field_names}")
+                    print(f"期望字段: {expected_fields}")
+                    
+                    # 删除现有集合
+                    utility.drop_collection(self.collection_name)
+                    print(f"已删除旧集合: {self.collection_name}")
+                else:
+                    print(f"集合 {self.collection_name} schema兼容，直接使用")
+                    self.collection = existing_collection
+                    return
+            
+            # 创建新集合
+            print(f"创建新集合: {self.collection_name}")
+            
+            # 定义字段
+            fields = [
+                FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
+                FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=65535),
+                FieldSchema(name="file_name", dtype=DataType.VARCHAR, max_length=255),
+                FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=768)
+            ]
+            
+            # 创建集合模式
+            schema = CollectionSchema(fields, f"Collection for {self.collection_name}")
+            
+            # 创建集合
+            self.collection = Collection(self.collection_name, schema)
+            
+            # 创建索引
+            index_params = {
+                "metric_type": "L2",
+                "index_type": "IVF_FLAT",
+                "params": {"nlist": 128}
+            }
+            self.collection.create_index("embedding", index_params)
+            
+            print(f"集合 {self.collection_name} 创建成功")
+            
         except Exception as e:
             print(f"创建或获取集合失败: {e}")
             raise
@@ -314,13 +333,18 @@ class MilvusRepository:
             # 确保集合已加载
             self.collection.load()
             
-            # 准备插入数据
-            texts = [item["text"] for item in data]
-            file_names = [item["file_name"] for item in data]
-            embeddings = [item["embedding"] for item in data]
+            # 准备插入数据 - 使用字典格式明确指定字段名称
+            # 这样可以避免字段顺序问题，特别是当有auto_id字段时
+            insert_data = []
+            for item in data:
+                insert_data.append({
+                    "text": item["text"],
+                    "file_name": item["file_name"],
+                    "embedding": item["embedding"]
+                    # 注意：id字段会自动生成，不需要手动指定
+                })
             
             # 插入数据
-            insert_data = [texts, file_names, embeddings]
             result = self.collection.insert(insert_data)
             
             # 刷新集合
@@ -449,6 +473,52 @@ class MilvusRepository:
         except Exception as e:
             print(f"获取集合信息失败: {e}")
             return {"status": "error", "message": str(e)}
+    
+    def get_existing_documents(self) -> List[Dict[str, Any]]:
+        """
+        获取集合中已有的文档列表
+        
+        Returns:
+            文档信息列表，每个文档包含文件名、文档数量等信息
+        """
+        try:
+            if not self.is_available:
+                return []
+            
+            # 确保集合已加载
+            self.collection.load()
+            
+            # 查询所有文档，按文件名分组
+            results = self.collection.query(
+                expr="",  # 空表达式表示查询所有
+                output_fields=["file_name"],
+                limit=16384  # Milvus的最大限制
+            )
+            
+            # 统计每个文件的文档数量
+            file_counts = {}
+            for result in results:
+                file_name = result["file_name"]
+                file_counts[file_name] = file_counts.get(file_name, 0) + 1
+            
+            # 转换为文档信息列表
+            documents = []
+            for file_name, count in file_counts.items():
+                documents.append({
+                    "file_name": file_name,
+                    "document_count": count,
+                    "file_type": file_name.split('.')[-1].upper() if '.' in file_name else "UNKNOWN"
+                })
+            
+            # 按文件名排序
+            documents.sort(key=lambda x: x["file_name"])
+            
+            print(f"找到 {len(documents)} 个已存储的文档")
+            return documents
+            
+        except Exception as e:
+            print(f"获取已有文档列表失败: {e}")
+            return []
     
     def clear_collection(self):
         """清空整个集合"""

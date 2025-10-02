@@ -34,14 +34,66 @@ class DocumentChatView:
         
         """, unsafe_allow_html=True)
     
-    def render_sidebar(self) -> Optional[Any]:
+    def display_existing_documents(self, documents: List[Dict[str, Any]]):
         """
-        渲染侧边栏，包含文件上传功能
+        显示已有文档列表
         
+        Args:
+            documents: 文档信息列表
+        """
+        if not documents:
+            return
+        
+        with st.sidebar:
+            st.markdown("---")
+            st.header("📚 知识库文档")
+            
+            for doc in documents:
+                with st.expander(f"📄 {doc['file_name']}", expanded=False):
+                    st.write(f"**文件类型:** {doc['file_type']}")
+                    st.write(f"**文档片段数:** {doc['document_count']}")
+                    
+                    # 添加文件图标
+                    file_icon = self._get_file_icon(doc['file_type'])
+                    st.markdown(f"{file_icon} {doc['file_name']}")
+    
+    def _get_file_icon(self, file_type: str) -> str:
+        """
+        根据文件类型返回对应的图标
+        
+        Args:
+            file_type: 文件类型
+            
+        Returns:
+            图标字符串
+        """
+        icon_map = {
+            "PDF": "📕",
+            "DOCX": "📘", 
+            "DOC": "📘",
+            "MD": "📝",
+            "MARKDOWN": "📝",
+            "TXT": "📄",
+            "CSV": "📊"
+        }
+        return icon_map.get(file_type.upper(), "📄")
+    
+    def render_sidebar(self, existing_documents: List[Dict[str, Any]] = None) -> Optional[Any]:
+        """
+        渲染侧边栏，包含文件上传功能和已有文档列表
+        
+        Args:
+            existing_documents: 已有文档列表
+            
         Returns:
             上传的文件对象或None
         """
         with st.sidebar:
+            # 显示已有文档列表（在添加文档上方）
+            if existing_documents:
+                self.display_existing_documents(existing_documents)
+                st.markdown("---")
+            
             st.header("📁 添加文档")
             
             uploaded_file = st.file_uploader(

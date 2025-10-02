@@ -34,6 +34,7 @@ class DocumentChatController:
             st.session_state.current_query_engine = None
             st.session_state.file_processed = False
             st.session_state.current_file_name = None
+            st.session_state.need_refresh_documents = False
     
     def _restore_state(self):
         """从session state恢复状态"""
@@ -94,6 +95,9 @@ class DocumentChatController:
             st.session_state.file_cache = self.model.file_cache
             st.session_state.file_processed = True
             st.session_state.current_file_name = uploaded_file.name
+            
+            # 设置标志，表示需要刷新知识库文档列表
+            st.session_state.need_refresh_documents = True
             
             # 成功提示已经在进度条中显示，不需要额外的成功消息
             self.view.display_document_preview(uploaded_file, max_pages=5)
@@ -165,8 +169,21 @@ class DocumentChatController:
             self.handle_clear_chat()
             st.rerun()
         
+        # 检查是否需要刷新文档列表
+        need_refresh = getattr(st.session_state, 'need_refresh_documents', False)
+        
+        # 获取已有文档列表
+        existing_documents = self.model.get_existing_documents()
+        
+        # 如果刚刚上传了文件，显示成功消息并清除刷新标志
+        if need_refresh:
+            st.session_state.need_refresh_documents = False
+            # 在侧边栏顶部显示成功消息
+            with st.sidebar:
+                st.success("✅ 文档已成功添加到知识库！")
+        
         # 渲染侧边栏并处理文件上传
-        uploaded_file = self.view.render_sidebar()
+        uploaded_file = self.view.render_sidebar(existing_documents)
         
         # 只有在文件真正发生变化时才处理文件上传
         if uploaded_file:
@@ -174,6 +191,8 @@ class DocumentChatController:
             if (not hasattr(st.session_state, 'current_file_name') or 
                 st.session_state.current_file_name != uploaded_file.name):
                 self.handle_file_upload(uploaded_file)
+                # 文件上传处理完成后，触发界面刷新以显示更新的文档列表
+                st.rerun()
             else:
                 # 文件相同，直接显示预览
                 self.view.display_document_preview(uploaded_file, max_pages=5)

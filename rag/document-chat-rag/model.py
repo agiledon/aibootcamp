@@ -280,6 +280,10 @@ class DocumentChatModel:
         """获取Milvus集合信息"""
         return self.milvus_repo.get_collection_info()
     
+    def get_existing_documents(self) -> List[Dict[str, Any]]:
+        """获取已有文档列表"""
+        return self.milvus_repo.get_existing_documents()
+    
     def clear_milvus_collection(self):
         """清空Milvus集合"""
         self.milvus_repo.clear_collection()
