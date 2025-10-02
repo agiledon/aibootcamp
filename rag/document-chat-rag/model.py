@@ -284,8 +284,15 @@ class DocumentChatModel:
             if hasattr(streaming_response, 'response_gen'):
                 logger.info("✅ 查询成功，返回流式响应")
                 return streaming_response.response_gen
+            elif hasattr(streaming_response, 'response'):
+                logger.info("✅ 查询成功，返回非流式响应")
+                # 对于非流式响应，创建一个生成器来模拟流式输出
+                response_text = str(streaming_response.response)
+                def response_generator():
+                    yield response_text
+                return response_generator()
             else:
-                logger.error("❌ 查询响应没有response_gen属性")
+                logger.error("❌ 查询响应格式不正确")
                 logger.error(f"响应对象类型: {type(streaming_response)}")
                 logger.error(f"响应对象属性: {dir(streaming_response)}")
                 return None
