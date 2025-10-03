@@ -8,7 +8,7 @@ import os
 import logging
 from typing import List, Dict, Any, Optional
 from llama_index.vector_stores.chroma import ChromaVectorStore
-from llama_index.core import StorageContext, VectorStoreIndex
+from llama_index.core import StorageContext, VectorStoreIndex, Settings
 from llama_index.core.schema import Document
 from llama_index.core.node_parser import SentenceSplitter
 import chromadb
@@ -65,14 +65,13 @@ class ChromaRepository:
             logger.error(f"初始化ChromaDB连接失败: {e}")
             self.is_available = False
     
-    def store_documents(self, documents: List[Document], file_name: str, embed_model=None, progress_callback=None) -> bool:
+    def store_documents(self, documents: List[Document], file_name: str, progress_callback=None) -> bool:
         """
         存储文档到ChromaDB
         
         Args:
             documents: LlamaIndex Document对象列表
             file_name: 原始文件名
-            embed_model: 嵌入模型实例
             progress_callback: 进度回调函数
             
         Returns:
@@ -103,11 +102,19 @@ class ChromaRepository:
                 metadata["file_name"] = file_name
                 metadata["source"] = file_name
             
-            # 批量添加文档到ChromaDB
+            # 使用Settings中的嵌入模型生成嵌入向量
+            logger.info("正在生成嵌入向量...")
+            embeddings = []
+            for text in texts:
+                embedding = Settings.embed_model.get_text_embedding(text)
+                embeddings.append(embedding)
+            
+            # 批量添加文档到ChromaDB，包含嵌入向量
             self.chroma_collection.add(
                 documents=texts,
                 metadatas=metadatas,
-                ids=ids
+                ids=ids,
+                embeddings=embeddings
             )
             
             logger.info(f"成功存储{len(documents)}个文档片段到ChromaDB")
@@ -124,9 +131,11 @@ class ChromaRepository:
         try:
             logger.info("正在创建ChromaDB向量存储...")
             
+            # 使用Settings中的嵌入模型创建ChromaDB向量存储
             self.vector_store = ChromaVectorStore(
                 chroma_collection=self.chroma_collection
             )
+            logger.info("使用Settings中的嵌入模型创建ChromaDB向量存储")
             
             # 创建存储上下文
             self.storage_context = StorageContext.from_defaults(
@@ -142,13 +151,13 @@ class ChromaRepository:
             self.storage_context = None
             return False
     
-    def _create_index(self, embed_model=None):
+    def _create_index(self):
         """创建向量存储索引"""
         try:
             logger.info("=== 开始创建索引 ===")
             logger.info(f"向量存储状态: {self.vector_store is not None}")
             logger.info(f"存储上下文状态: {self.storage_context is not None}")
-            logger.info(f"嵌入模型状态: {embed_model is not None}")
+            logger.info(f"Settings嵌入模型状态: {Settings.embed_model is not None}")
             
             if self.vector_store is None or self.storage_context is None:
                 logger.error("❌ 向量存储或存储上下文未初始化，无法创建索引")
@@ -168,19 +177,12 @@ class ChromaRepository:
                 logger.error(f"❌ 检查ChromaDB数据失败: {e}")
                 return False
             
-            # 从向量存储创建索引
+            # 从向量存储创建索引，使用Settings中的嵌入模型
             logger.info("✅ 开始从向量存储创建索引...")
-            if embed_model:
-                self.index = VectorStoreIndex.from_vector_store(
-                    self.vector_store,
-                    storage_context=self.storage_context,
-                    embed_model=embed_model
-                )
-            else:
-                self.index = VectorStoreIndex.from_vector_store(
-                    self.vector_store,
-                    storage_context=self.storage_context
-                )
+            self.index = VectorStoreIndex.from_vector_store(
+                self.vector_store,
+                storage_context=self.storage_context
+            )
             
             logger.info("✅ 索引创建成功！")
             return True
@@ -225,7 +227,7 @@ class ChromaRepository:
                         logger.info("✅ ChromaDB向量存储创建成功")
                     
                     try:
-                        # 创建索引（这里需要传入embed_model，但我们在外部处理）
+                        # 创建索引
                         logger.info("开始创建索引...")
                         if not self._create_index():
                             logger.error("❌ 创建索引失败")
@@ -370,8 +372,7 @@ class ChromaRepository:
             
             # 获取与该文件相关的所有文档ID
             results = self.chroma_collection.get(
-                where={"file_name": file_name},
-                output_fields=["ids"]
+                where={"file_name": {"$eq": file_name}}
             )
             
             ids_to_delete = results.get('ids', [])
@@ -388,13 +389,10 @@ class ChromaRepository:
             logger.error(f"删除文件文档时出错: {e}")
             return False
     
-    def update_vector_store_with_new_documents(self, embed_model=None):
+    def update_vector_store_with_new_documents(self):
         """
         当新文档上传后，更新向量存储和查询引擎
         这个方法会在文档上传完成后调用
-        
-        Args:
-            embed_model: 嵌入模型实例
         """
         try:
             logger.info("正在更新ChromaDB向量存储和查询引擎...")
@@ -402,7 +400,7 @@ class ChromaRepository:
             # 重新创建向量存储，这会自动包含新文档
             if self._create_vector_store():
                 # 重新创建索引
-                if self._create_index(embed_model):
+                if self._create_index():
                     logger.info("ChromaDB向量存储和查询引擎更新成功")
                     return True
                 else:

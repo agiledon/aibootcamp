@@ -5,6 +5,7 @@ Controller类 - 处理用户请求，协调View和Model之间的交互
 
 import gc
 import logging
+import streamlit as st
 from typing import Optional, Any, List
 from model import DocumentChatModel
 from view import DocumentChatView
@@ -121,6 +122,47 @@ class DocumentChatController:
             self.view.display_sidebar_progress(0, f"处理失败: {message}")
             self.view.show_error_message(message)
             self.view.stop_app()
+    
+    def _handle_document_deletion(self):
+        """处理文档删除操作"""
+        # 检查是否有待删除的文档
+        if 'delete_document' in st.session_state:
+            document_info = st.session_state.delete_document
+            
+            # 显示确认对话框
+            if self.view.show_delete_confirmation(document_info):
+                # 用户确认删除
+                file_name = document_info['file_name']
+                success, message = self.model.delete_document(file_name)
+                
+                if success:
+                    # 删除成功，清除相关状态
+                    if hasattr(st.session_state, 'current_file_name') and st.session_state.current_file_name == file_name:
+                        # 如果删除的是当前文件，清除当前状态
+                        if 'current_query_engine' in st.session_state:
+                            del st.session_state.current_query_engine
+                        if 'file_processed' in st.session_state:
+                            st.session_state.file_processed = False
+                        if 'current_file_name' in st.session_state:
+                            del st.session_state.current_file_name
+                    
+                    # 清除删除状态
+                    del st.session_state.delete_document
+                    
+                    # 显示成功消息
+                    st.success(f"✅ {message}")
+                    
+                    # 设置刷新标志
+                    st.session_state.need_refresh_documents = True
+                    
+                    # 重新运行以刷新界面
+                    st.rerun()
+                else:
+                    # 删除失败，显示错误消息
+                    st.error(f"❌ {message}")
+                    
+                    # 清除删除状态
+                    del st.session_state.delete_document
             return False
     
     def handle_chat_input(self, user_input: str, search_scope: str = None, selected_documents: List = None) -> bool:
@@ -269,6 +311,9 @@ class DocumentChatController:
         # 保存检索范围状态
         st.session_state.search_scope = search_scope
         st.session_state.selected_documents = selected_documents
+        
+        # 处理文档删除操作
+        self._handle_document_deletion()
         
         # 渲染侧边栏并处理文件上传
         uploaded_file = self.view.render_sidebar(existing_documents)

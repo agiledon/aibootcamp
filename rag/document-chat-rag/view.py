@@ -48,7 +48,7 @@ class DocumentChatView:
             st.markdown("---")
             st.header("📚 知识库文档")
             
-            for doc in documents:
+            for i, doc in enumerate(documents):
                 with st.expander(f"📄 {doc['file_name']}", expanded=False):
                     st.write(f"**文件类型:** {doc['file_type']}")
                     st.write(f"**文档片段数:** {doc['document_count']}")
@@ -56,6 +56,54 @@ class DocumentChatView:
                     # 添加文件图标
                     file_icon = self._get_file_icon(doc['file_type'])
                     st.markdown(f"{file_icon} {doc['file_name']}")
+                    
+                    # 添加删除按钮
+                    col1, col2 = st.columns([1, 1])
+                    with col2:
+                        if st.button("🗑️ 删除", key=f"delete_{i}", help="删除此文档"):
+                            # 存储要删除的文档信息到session state
+                            st.session_state.delete_document = {
+                                'file_name': doc['file_name'],
+                                'file_type': doc['file_type'],
+                                'document_count': doc['document_count'],
+                                'index': i
+                            }
+                            st.rerun()
+    
+    def show_delete_confirmation(self, document_info: Dict[str, Any]) -> bool:
+        """
+        显示删除确认对话框
+        
+        Args:
+            document_info: 要删除的文档信息
+            
+        Returns:
+            bool: 用户是否确认删除
+        """
+        with st.sidebar:
+            st.markdown("---")
+            st.warning("⚠️ 确认删除文档")
+            
+            file_icon = self._get_file_icon(document_info['file_type'])
+            st.write(f"{file_icon} **{document_info['file_name']}**")
+            st.write(f"**文件类型:** {document_info['file_type']}")
+            st.write(f"**文档片段数:** {document_info['document_count']}")
+            
+            st.write("**此操作将永久删除该文档及其所有片段，无法恢复！**")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("❌ 取消", key="cancel_delete"):
+                    # 清除删除状态
+                    if 'delete_document' in st.session_state:
+                        del st.session_state.delete_document
+                    st.rerun()
+            
+            with col2:
+                if st.button("✅ 确认删除", key="confirm_delete", type="primary"):
+                    return True
+        
+        return False
     
     def _get_file_icon(self, file_type: str) -> str:
         """

@@ -12,10 +12,8 @@ from llama_index.readers.file import PDFReader, DocxReader, MarkdownReader, CSVR
 from llama_index.core import Settings, VectorStoreIndex, PromptTemplate
 from llama_index.core.response_synthesizers import ResponseMode
 from llama_index.core.readers import SimpleDirectoryReader
-from llama_index.llms.deepseek import DeepSeek
-from llama_index.embeddings.ollama import OllamaEmbedding
 from chroma_repository import ChromaRepository
-from llm_service import ModelService
+from config import get_llm, get_embed_model, verify_settings
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -29,8 +27,11 @@ class DocumentChatModel:
         self.file_cache: Dict[str, Any] = {}
         self.messages: List[Dict[str, str]] = []
         
-        # 初始化服务
-        self.model_service = ModelService()
+        # 验证Settings配置
+        if not verify_settings():
+            raise RuntimeError("Settings配置验证失败，请检查config.py")
+        
+        # 初始化ChromaDB仓库
         self.chroma_repo = ChromaRepository(collection_name="kflow")
         
         logger.info("DocumentChatModel初始化完成")
@@ -38,12 +39,12 @@ class DocumentChatModel:
     @property
     def llm(self):
         """获取LLM模型"""
-        return self.model_service.get_llm()
+        return get_llm()
     
     @property
     def embed_model(self):
         """获取嵌入模型"""
-        return self.model_service.get_embed_model()
+        return get_embed_model()
     
     def _get_file_loader(self, file_extension: str):
         """
@@ -149,21 +150,18 @@ class DocumentChatModel:
                 if progress_callback:
                     progress_callback(20, "文档解析完成")
                 
-                # 设置嵌入模型
-                Settings.embed_model = self.embed_model
+                # 嵌入模型已在config.py中统一配置
                 
                 # 阶段2：存储到ChromaDB (20% - 80%)
                 if progress_callback:
                     progress_callback(30, "正在存储到ChromaDB向量数据库...")
                 
-                # 设置嵌入模型
-                Settings.embed_model = self.embed_model
+                # 嵌入模型已在config.py中统一配置
                 
                 # 存储文档到ChromaDB
                 storage_success = self.chroma_repo.store_documents(
                     docs, 
                     uploaded_file.name, 
-                    self.embed_model,  # 传入嵌入模型
                     progress_callback
                 )
                 
@@ -178,9 +176,7 @@ class DocumentChatModel:
                     progress_callback(85, "正在更新向量存储...")
                 
                 # 更新向量存储以包含新文档
-                update_success = self.chroma_repo.update_vector_store_with_new_documents(
-                    self.embed_model
-                )
+                update_success = self.chroma_repo.update_vector_store_with_new_documents()
                 
                 if not update_success:
                     logger.warning("向量存储更新失败，但不影响基本功能")
@@ -398,6 +394,46 @@ class DocumentChatModel:
                 })
             return documents
         return []
+    
+    def delete_document(self, file_name: str) -> tuple[bool, str]:
+        """
+        删除指定文档
+        
+        Args:
+            file_name: 要删除的文件名
+            
+        Returns:
+            tuple[bool, str]: (是否成功, 消息)
+        """
+        try:
+            logger.info(f"开始删除文档: {file_name}")
+            
+            # 从ChromaDB中删除文档
+            success = self.chroma_repo.delete_file_documents(file_name)
+            
+            if success:
+                # 清除文件缓存
+                file_key = f"{file_name}_{self.session_id}"
+                if file_key in self.file_cache:
+                    del self.file_cache[file_key]
+                    logger.info(f"已清除文件缓存: {file_key}")
+                
+                # 重新创建向量存储和索引以反映删除操作
+                update_success = self.chroma_repo.update_vector_store_with_new_documents()
+                
+                if update_success:
+                    logger.info(f"✅ 文档 '{file_name}' 删除成功")
+                    return True, f"文档 '{file_name}' 已成功删除"
+                else:
+                    logger.warning(f"⚠️ 文档 '{file_name}' 已删除，但向量存储更新失败")
+                    return True, f"文档 '{file_name}' 已删除，但向量存储更新失败"
+            else:
+                logger.error(f"❌ 删除文档 '{file_name}' 失败")
+                return False, f"删除文档 '{file_name}' 失败"
+                
+        except Exception as e:
+            logger.error(f"❌ 删除文档时发生错误: {e}")
+            return False, f"删除文档时发生错误: {str(e)}"
     
     def clear_chroma_collection(self):
         """清空ChromaDB集合"""
