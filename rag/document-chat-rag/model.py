@@ -10,6 +10,7 @@ import logging
 from typing import List, Dict, Any, Optional
 from llama_index.readers.file import PDFReader, DocxReader, MarkdownReader, CSVReader
 from llama_index.core import Settings, VectorStoreIndex, PromptTemplate
+from llama_index.core.response_synthesizers import ResponseMode
 from llama_index.core.readers import SimpleDirectoryReader
 from llama_index.llms.deepseek import DeepSeek
 from llama_index.embeddings.ollama import OllamaEmbedding
@@ -209,9 +210,15 @@ class DocumentChatModel:
                 )
                 qa_prompt_tmpl = PromptTemplate(qa_prompt_tmpl_str)
                 
-                query_engine.update_prompts(
-                    {"response_synthesizer:text_qa_template": qa_prompt_tmpl}
-                )
+                # 尝试更新提示模板，如果失败则跳过
+                try:
+                    query_engine.update_prompts(
+                        {"response_synthesizer:text_qa_template": qa_prompt_tmpl}
+                    )
+                    logger.info("✅ 成功更新查询引擎提示模板")
+                except Exception as e:
+                    logger.warning(f"⚠️ 更新提示模板失败，但不影响基本功能: {e}")
+                    # 如果更新提示模板失败，我们仍然可以使用查询引擎
                 
                 # 缓存查询引擎
                 self.file_cache[file_key] = query_engine

@@ -103,7 +103,8 @@ class DocumentChatView:
             )
             
             if uploaded_file:
-                st.write("正在处理文档...")
+                # 不在这里显示进度，让控制器处理
+                pass
                 
         return uploaded_file
     
@@ -376,21 +377,19 @@ class DocumentChatView:
             progress: 进度百分比 (0-100)
             message: 进度消息
         """
-        # 创建进度条容器
-        progress_container = st.container()
+        # 显示动态百分比
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown(f"<div style='text-align: center; font-size: 18px; font-weight: bold; color: #28a745;'>{progress}%</div>", unsafe_allow_html=True)
         
-        with progress_container:
-            # 显示动态百分比
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                st.markdown(f"<div style='text-align: center; font-size: 18px; font-weight: bold; color: #28a745;'>{progress}%</div>", unsafe_allow_html=True)
-            
-            # 显示绿色进度条
-            progress_bar = st.progress(progress / 100)
-            
-            # 当进度达到100%时显示完成信息
-            if progress == 100:
-                st.success("✅ 文档加载完成")
+        # 显示绿色进度条
+        progress_bar = st.progress(progress / 100)
+        
+        # 显示进度消息
+        if progress < 100:
+            st.info(f"📄 {message}")
+        else:
+            st.success("✅ 文档加载完成")
     
     def create_progress_container(self):
         """创建进度显示容器"""

@@ -105,6 +105,14 @@ class DocumentChatController:
             # 设置标志，表示需要刷新知识库文档列表
             st.session_state.need_refresh_documents = True
             
+            # 清除主界面的进度显示
+            if 'main_progress_placeholder' in st.session_state:
+                st.session_state.main_progress_placeholder.empty()
+            
+            # 清除侧边栏的进度显示
+            if 'progress_placeholder' in st.session_state:
+                st.session_state.progress_placeholder.empty()
+            
             # 成功提示已经在进度条中显示，不需要额外的成功消息
             self.view.display_document_preview(uploaded_file, max_pages=5)
             return True
