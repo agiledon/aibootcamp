@@ -142,6 +142,9 @@ rag/llamaindex-rag/chroma_db/
 *.sqlite
 *.sqlite3
 
+# ChromaDB lock files
+chromadb-*.lock
+
 # Model files and embeddings
 *.bin
 *.pkl

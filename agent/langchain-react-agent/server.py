@@ -12,6 +12,12 @@ llm = OllamaLLM(
     temperature=0.0,
 )
 
+import logging
+import sys
+
+logging.basicConfig(stream=sys.stdout, level=logging.ERROR)
+logging.getLogger().addHandler(logging.StreamHandler(stream=sys.stdout))
+
 # 简化的ReAct模板
 react_template = """You are a helpful AI assistant with access to search and calculation tools.
 
