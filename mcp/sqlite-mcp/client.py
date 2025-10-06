@@ -2,10 +2,10 @@ import asyncio
 from llama_index.tools.mcp import BasicMCPClient, McpToolSpec
 from llama_index.core.agent.workflow import FunctionAgent, ToolCallResult, ToolCall
 from llama_index.core.workflow import Context
-from llama_index.llms.ollama import Ollama
+from llama_index.llms.deepseek import DeepSeek
 from llama_index.core import Settings
 
-llm = Ollama(model="qwen3:8b", request_timeout=120.0)
+llm = DeepSeek(model="deepseek-chat", request_timeout=120.0)
 Settings.llm = llm
 
 
