@@ -13,13 +13,22 @@ A multimodal RAG (Retrieval-Augmented Generation) system based on CrewAI that su
 
 ## Architecture
 
-The system consists of several key components:
+The system consists of several key components organized in a modular architecture:
 
-- **CrewAI Agents**: Multi-agent collaboration for document processing and analysis
-- **Milvus Vector Database**: High-performance vector storage and retrieval
-- **AssemblyAI Integration**: Real-time audio transcription services
-- **DeepSeek LLM**: Unified language model for all text generation tasks
-- **Ollama Embeddings**: Local embedding model for vector generation
+- **Client Layer**: Specialized clients for external service integration
+  - **DeepSeek LLM**: Unified language model for all text generation tasks
+  - **Ollama Embeddings**: Local embedding model for vector generation
+  - **Milvus Vector Database**: High-performance vector storage and retrieval
+  - **AssemblyAI Integration**: Real-time audio transcription services
+
+- **Workflow Layer**: CrewAI-based intelligent workflows
+  - **CrewAI Agents**: Multi-agent collaboration for document processing and analysis
+  - **Data Ingestion Flow**: Automated document and audio processing
+  - **Multimodal RAG Flow**: Intelligent query processing and response generation
+
+- **Command Layer**: Command pattern implementation for operation management
+  - **Command Handler**: Centralized command execution and management
+  - **Command Pattern**: Extensible command structure for future operations
 
 ## Environment Setup
 
@@ -67,11 +76,13 @@ OLLAMA_BASE_URL=http://localhost:11434
 ### 3. Install Dependencies
 
 ```bash
-# Install dependencies using uv
+# Recommended: Install dependencies using uv (faster and more reliable)
 uv sync
 
-# Or install using pip
+# Alternative: Install using pip
 pip install -r requirements.txt
+
+# Note: The project uses Python 3.12 as specified in .python-version
 ```
 
 ### 4. Start Services
@@ -144,24 +155,54 @@ The system supports various query types:
 ```
 ├── main.py                    # Main program file
 ├── config.py                  # Configuration file
-├── crewai_client.py           # CrewAI integration client
-├── llm_client.py              # LLM client wrapper
-├── embedding_client.py        # Embedding model client
-├── milvus_client.py           # Milvus vector database client
-├── assemblyai_client.py       # AssemblyAI transcription client
-├── multimodal_rag_flow.py     # Multimodal RAG workflow
-├── data_ingestion_flow.py     # Data ingestion workflow
-├── command_handler.py         # Command pattern handler
-├── command_pattern.py         # Command pattern implementation
-├── requirements.txt           # Python dependencies
+├── pyproject.toml             # Project configuration and dependencies
+├── requirements.txt           # Python dependencies (legacy)
+├── uv.lock                    # UV lock file for dependency management
+├── uv.toml                    # UV configuration
+├── .python-version            # Python version specification (3.12)
 ├── docker-compose.yml         # Docker service configuration
+├── client/                    # Client modules directory
+│   ├── __init__.py           # Client package initialization
+│   ├── llm_client.py         # LLM client wrapper
+│   ├── embedding_client.py   # Embedding model client
+│   ├── milvus_client.py      # Milvus vector database client
+│   └── assemblyai_client.py  # AssemblyAI transcription client
+├── crewai_workflows/          # CrewAI workflow modules
+│   ├── __init__.py           # Workflow package initialization
+│   ├── crewai_client.py      # CrewAI integration client
+│   ├── data_ingestion_flow.py # Data ingestion workflow
+│   └── multimodal_rag_flow.py # Multimodal RAG workflow
+├── command/                   # Command pattern modules
+│   ├── __init__.py           # Command package initialization
+│   ├── command_handler.py    # Command pattern handler
+│   └── command_pattern.py    # Command pattern implementation
 ├── data/                      # Data files directory
 │   ├── annualreport-2024.pdf # Sample PDF document
 │   └── finance_audio.mp3     # Sample audio file
-└── .env                       # Environment variables configuration
+├── __pycache__/               # Python cache directory
+└── .env                       # Environment variables configuration (not tracked)
 ```
 
 ## Technical Details
+
+### Modular Architecture
+
+The system is built with a modular architecture for better maintainability and scalability:
+
+- **Client Layer** (`client/`): Contains specialized clients for different services
+  - `llm_client.py`: DeepSeek LLM integration
+  - `embedding_client.py`: Ollama embedding model integration
+  - `milvus_client.py`: Milvus vector database operations
+  - `assemblyai_client.py`: Audio transcription services
+
+- **Workflow Layer** (`crewai_workflows/`): Contains CrewAI-based workflows
+  - `crewai_client.py`: CrewAI agent orchestration
+  - `data_ingestion_flow.py`: Document and audio processing workflows
+  - `multimodal_rag_flow.py`: RAG query processing workflows
+
+- **Command Layer** (`command/`): Implements command pattern for operation handling
+  - `command_pattern.py`: Base command pattern implementation
+  - `command_handler.py`: Command execution and management
 
 ### Multimodal Processing Pipeline
 

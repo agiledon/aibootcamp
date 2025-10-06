@@ -1,20 +1,13 @@
-import os
-import glob
 import logging
 import tempfile
-import requests
-from pathlib import Path
-from typing import List, Dict, Any, Optional
-from dataclasses import dataclass, field
+from typing import List, Dict, Any
 
 import sounddevice as sd
 import soundfile as sf
-from PyPDF2 import PdfReader
-# Removed imports that are now in separate modules
 
 import config
 from client import LLMClient, EmbeddingClient, MilvusClient, AssemblyAIClient
-from crewai_workflows import CrewAIClient, DataIngestionFlow, MultimodalRAGFlow
+from crewai_workflows import CrewAIClient
 from command import CommandHandler
 
 # Configure logging
@@ -137,7 +130,7 @@ def main():
             print("📡 Connecting to Milvus...")
             
             # Use Command pattern for system setup
-            from command_pattern import SystemSetupCommand
+            from command.command_pattern import SystemSetupCommand
             setup_command = SystemSetupCommand()
             setup_result = setup_command.execute()
             print(setup_result)
