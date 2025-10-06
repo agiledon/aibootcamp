@@ -4,6 +4,9 @@ CrewAI客户端管理模块
 """
 
 import logging
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from crewai import Agent, Task, Crew, LLM
 import config
 

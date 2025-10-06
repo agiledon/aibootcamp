@@ -5,6 +5,9 @@ LLM客户端管理模块
 
 import logging
 import openai
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 
 logger = logging.getLogger(__name__)

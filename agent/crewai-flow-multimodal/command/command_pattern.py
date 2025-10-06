@@ -8,7 +8,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from multimodal_rag_flow import MultimodalRAGFlow
+from crewai_workflows import MultimodalRAGFlow
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ class SystemSetupCommand(Command):
         """执行系统设置"""
         try:
             logger.info("Setting up system...")
-            from data_ingestion_flow import DataIngestionFlow
+            from crewai_workflows import DataIngestionFlow
             
             # Use the DataIngestionFlow to set up the system
             ingestion_flow = DataIngestionFlow()

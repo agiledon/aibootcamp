@@ -13,14 +13,9 @@ from PyPDF2 import PdfReader
 # Removed imports that are now in separate modules
 
 import config
-from llm_client import LLMClient
-from embedding_client import EmbeddingClient
-from crewai_client import CrewAIClient
-from milvus_client import MilvusClient
-from assemblyai_client import AssemblyAIClient
-from data_ingestion_flow import DataIngestionFlow
-from multimodal_rag_flow import MultimodalRAGFlow
-from command_handler import CommandHandler
+from client import LLMClient, EmbeddingClient, MilvusClient, AssemblyAIClient
+from crewai_workflows import CrewAIClient, DataIngestionFlow, MultimodalRAGFlow
+from command import CommandHandler
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

@@ -6,7 +6,7 @@
 import logging
 from typing import Optional
 
-from command_pattern import Command, TextQueryCommand, AudioQueryCommand, SystemSetupCommand, ExitCommand
+from .command_pattern import Command, TextQueryCommand, AudioQueryCommand, SystemSetupCommand, ExitCommand
 
 logger = logging.getLogger(__name__)
 

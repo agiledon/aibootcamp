@@ -227,10 +227,6 @@ This repository is based on and significantly refactored from the [multimodal-ra
 - **Code Refactoring**: Complete architectural redesign with improved modularity and maintainability
 - **DeepSeek Integration**: Full support for DeepSeek LLM models as the primary language model
 - **Ollama Local Deployment**: Integration with Ollama for local deployment of nomic-embed-text embedding models
-- **Enhanced Multimodal Processing**: Improved document and audio processing workflows
-- **Advanced RAG Pipeline**: Optimized retrieval-augmented generation with better performance
-- **CrewAI Integration**: Enhanced multi-agent collaboration for document processing
-- **Production-Ready**: Better error handling, logging, and deployment configurations
 
 We extend our gratitude to the original contributors of the AI Engineering Hub for providing the foundational multimodal RAG implementation.
 

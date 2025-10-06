@@ -13,10 +13,11 @@ from PyPDF2 import PdfReader
 from pymilvus import Collection, FieldSchema, CollectionSchema, DataType, utility
 from crewai.flow.flow import Flow, start, listen
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
-from milvus_client import MilvusClient
-from assemblyai_client import AssemblyAIClient
-from embedding_client import EmbeddingClient
+from client import MilvusClient, AssemblyAIClient, EmbeddingClient
 
 logger = logging.getLogger(__name__)
 

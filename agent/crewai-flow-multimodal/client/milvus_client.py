@@ -5,6 +5,9 @@ Milvus向量数据库客户端管理模块
 
 import logging
 from pymilvus import connections, Collection, FieldSchema, CollectionSchema, DataType, utility
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 
 logger = logging.getLogger(__name__)

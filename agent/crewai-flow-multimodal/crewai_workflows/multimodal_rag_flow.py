@@ -10,11 +10,12 @@ from dataclasses import dataclass, field
 from crewai.flow.flow import Flow, start, listen
 from crewai.tools import BaseTool
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
-from crewai_client import CrewAIClient
-from assemblyai_client import AssemblyAIClient
-from embedding_client import EmbeddingClient
-from milvus_client import MilvusClient
+from .crewai_client import CrewAIClient
+from client import AssemblyAIClient, EmbeddingClient, MilvusClient
 
 logger = logging.getLogger(__name__)
 

@@ -22,7 +22,7 @@ def init_db():
 def add_data(query: str) -> bool:
     """Add new data to the people table using a SQL INSERT query.
 
-    Args:
+    Args:g
         query (str): SQL INSERT query following this format:
             INSERT INTO people (name, age, profession)
             VALUES ('John Doe', 30, 'Engineer')

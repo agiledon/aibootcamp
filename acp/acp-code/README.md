@@ -1,3 +1,5 @@
+Notes: clone from https://github.com/patchy631/ai-engineering-hub
+
 # Summary Generator multi-agent workflow with ACP
 
 A simple demonstration of the Agent Communication Protocol (ACP), showcasing how two agents built using different frameworks (CrewAI and Smolagents) can collaborate seamlessly to generate and verify a research summary.
