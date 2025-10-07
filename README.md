@@ -2,6 +2,8 @@
 
 A comprehensive collection of AI development examples and tutorials designed for AI developers and practitioners.
 
+**Note:** This repository is continuously updated with new examples showcasing emerging technologies in AI. We regularly add fresh content to help you stay current with mainstream and cutting-edge technologies in AI application development.
+
 ## 📚 Overview
 
 This repository provides a curated collection of AI knowledge examples and practical implementations, covering:
@@ -135,6 +137,8 @@ This repository is licensed under the MIT License - see the [LICENSE](LICENSE) f
 # AI 训练营
 
 为AI开发者和从业者提供的综合AI开发示例和教程集合。
+
+**说明：** 本Repository会持续更新，我们会不断增加更多示例，展现AI领域的更多新技术，以帮助你及时了解与AI应用开发相关的主流和前沿技术。
 
 ## 📚 项目概述
 
