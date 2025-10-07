@@ -148,10 +148,6 @@ AI Strategy Consultant and AI-Native Application Developer, DDD Evangelist, Ente
 
 - GitHub: [@agiledon](https://github.com/agiledon)
 
-## License
-
-This repository is licensed under the MIT License - see the LICENSE file for details.
-
 ## Support
 
 For issues and questions, please open an issue in the repository or contact the development team.

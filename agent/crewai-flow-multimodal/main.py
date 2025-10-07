@@ -1,6 +1,5 @@
 import logging
 import tempfile
-from typing import List, Dict, Any
 
 import sounddevice as sd
 import soundfile as sf
@@ -20,61 +19,6 @@ embedding_client = EmbeddingClient()
 assemblyai_client = AssemblyAIClient()
 crewai_client = CrewAIClient()
 milvus_client = MilvusClient()
-
-def get_embeddings(texts: List[str]) -> List[List[float]]:
-    """
-    获取文本嵌入向量，使用Ollama本地模型
-    """
-    return embedding_client.get_embeddings(texts)
-
-# Global variables for caching
-_collection = None
-
-# Constants and classes moved to separate modules
-
-
-def get_collection():
-    """Get or create collection"""
-    return milvus_client.get_collection()
-
-
-def transcribe_audio_file(audio_file: str) -> str:
-    """Transcribe audio file using AssemblyAI"""
-    return assemblyai_client.transcribe_audio_file(audio_file)
-
-
-def search_vector_database(query: str, limit: int = 5) -> List[Dict[str, Any]]:
-    """Search vector database for relevant information"""
-    # Generate query embedding
-    embeddings = get_embeddings([query])
-    query_embedding = embeddings[0]
-    
-    # Search using milvus_client
-    return milvus_client.search_vectors(query_embedding, limit)
-
-
-def format_search_results(search_results: List[Dict[str, Any]]) -> str:
-    """Format search results into readable string"""
-    if not search_results:
-        return "No relevant documents found."
-    
-    formatted_results = []
-    for result in search_results:
-        relevance = (1 - result['distance']) * 100
-        formatted_results.append(
-            f"Source: {result['source']} ({result['content_type']})\n"
-            f"Relevance: {relevance:.1f}%\n"
-            f"Content: {result['content'][:200]}...\n"
-            f"---"
-        )
-    
-    return "\n".join(formatted_results)
-
-
-# SearchKnowledgeBaseTool moved to multimodal_rag_flow.py
-
-# DataIngestionFlow and MultimodalRAGFlow moved to separate modules
-
 
 def record_audio(duration: int = 10, sample_rate: int = 16000) -> str:
     """Record audio from microphone and save to temporary file"""
@@ -101,13 +45,6 @@ def record_audio(duration: int = 10, sample_rate: int = 16000) -> str:
         raise
 
 
-# process_query function moved to Command pattern implementation
-
-def check_system_status():
-    """Check if the system is ready"""
-    return milvus_client.check_system_status()
-
-
 def main():
     """Main application entry point"""
     print("\n🤖 Welcome to Multimodal Agentic RAG System!")
@@ -123,7 +60,7 @@ def main():
     # Check system status and setup if needed
     print("🔍 Checking system status...")
     try:
-        if check_system_status():
+        if milvus_client.check_system_status():
             print("✅ System ready!")
         else:
             print("\n⚠️ System not set up yet. Let's set it up first!")

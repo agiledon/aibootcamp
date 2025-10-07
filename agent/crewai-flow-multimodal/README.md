@@ -271,10 +271,6 @@ This repository is based on and significantly refactored from the [multimodal-ra
 
 We extend our gratitude to the original contributors of the AI Engineering Hub for providing the foundational multimodal RAG implementation.
 
-## License
-
-This repository is licensed under the MIT License - see the LICENSE file for details.
-
 ## Notes
 
 1. **Embedding Model Limitation**: DeepSeek API currently doesn't support embedding models, so OpenAI's text-embedding-3-small model is used
