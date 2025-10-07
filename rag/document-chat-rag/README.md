@@ -1,3 +1,288 @@
+# KFlow RAG - Intelligent Document Q&A System with ChromaDB
+
+## Overview
+
+KFlow RAG is an intelligent document question-answering system based on ChromaDB vector database, supporting multiple document formats for upload, processing, and intelligent Q&A. The system adopts the MVP architecture pattern, integrating LlamaIndex framework, DeepSeek LLM, and Ollama embedding models, providing persistent document storage and cross-session retrieval capabilities.
+
+## Features
+
+### 🎯 Core Features
+- **Persistent Storage**: Document embeddings stored in ChromaDB database
+- **Collection Management**: Uses "kflow" as the default collection name
+- **File Replacement**: Same-name files automatically replace old versions
+- **Global Retrieval**: Retrieve relevant documents from the entire collection
+- **Intelligent Q&A**: Supports full knowledge base and specific document retrieval
+- **Streaming Response**: Real-time answer generation for better user experience
+
+### 📁 File Structure
+- `chroma_repository.py`: ChromaDB database operations class
+- `custom_query_engine.py`: Custom query engine with document filtering
+- `model.py`: Core business logic integrating ChromaDB storage and retrieval
+- `controller.py`: Controller coordinating View and Model interactions
+- `view.py`: View layer with Streamlit user interface
+- `app.py`: Main application entry point
+
+## Installation and Configuration
+
+### 1. Install Dependencies
+
+#### Using uv (Recommended)
+```bash
+# Install project dependencies
+uv sync
+
+# Or using pip
+pip install -e .
+```
+
+### 2. Start Ollama Service
+
+```bash
+# Start Ollama service
+ollama serve
+
+# Install embedding model
+ollama pull nomic-embed-text
+```
+
+### 3. Configure DeepSeek API
+
+```bash
+# Set DeepSeek API Key
+export DEEPSEEK_API_KEY="your_api_key_here"
+```
+
+### 4. Verify Installation
+```bash
+# Check Ollama service status
+curl http://localhost:11434/api/tags
+
+# Check installed models
+ollama list
+```
+
+## Usage
+
+### Starting the Application
+
+#### Method 1: Direct Start (Recommended)
+```bash
+# Ensure Ollama service is running
+ollama serve
+
+# Start the application
+uv run streamlit run app.py
+```
+
+#### Method 2: Using Ollama Startup Script
+```bash
+# Start Ollama service
+python start_ollama.py
+
+# Start the application in another terminal
+uv run streamlit run app.py
+```
+
+### Document Operation Workflow
+
+1. **Upload Documents**: Supports PDF, Word, Markdown, CSV, TXT files
+2. **Automatic Storage**: Documents automatically stored in ChromaDB collection "kflow"
+3. **Select Retrieval Scope**: Supports full knowledge base or specific document retrieval
+4. **Intelligent Q&A**: RAG-based Q&A with streaming responses
+
+## Technical Architecture
+
+### ChromaRepository Class
+```python
+class ChromaRepository:
+    def __init__(self, collection_name="kflow")
+    def store_documents(self, documents, file_name, embed_model, progress_callback=None)
+    def get_query_engine(self, file_names=None, llm=None, streaming=True)
+    def get_collection_info(self)
+    def clear_collection(self)
+    def update_vector_store_with_new_documents(self, embed_model)
+```
+
+### FilteredQueryEngine Class
+```python
+class FilteredQueryEngine(BaseQueryEngine):
+    def __init__(self, index, target_files=None, similarity_top_k=5, streaming=True, llm=None)
+    def query(self, query_str)
+    def set_target_files(self, target_files)
+    def get_target_files(self)
+```
+
+### Storage Strategy
+- **Collection Name**: kflow
+- **Vector Dimension**: 768 (nomic-embed-text model)
+- **Document Splitting**: 1024 character chunks, 200 character overlap
+- **Metadata**: Includes filename and source information
+
+### Retrieval Strategy
+- **Similarity Search**: Retrieve top 5 most relevant document chunks
+- **Global Search**: Retrieve from entire collection, not limited to single files
+- **Document Filtering**: Support filtering by filename
+- **Streaming Response**: Real-time answer generation
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. Ollama Service Connection Failed
+```
+Error: HTTP Request: POST http://localhost:11434/api/embed "HTTP/1.1 502 Bad Gateway"
+Solution: Ensure Ollama service is running with nomic-embed-text model installed
+Check:
+  - curl http://localhost:11434/api/tags
+  - ollama list
+  - ollama pull nomic-embed-text
+Note: Embedding model is required for document vector generation
+```
+
+#### 2. DeepSeek API Connection Failed
+```
+Error: HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 401 Unauthorized"
+Solution: Ensure correct DeepSeek API Key is set
+Check:
+  - echo $DEEPSEEK_API_KEY
+  - Verify API Key is valid with sufficient quota
+```
+
+#### 3. ChromaDB Initialization Failed
+```
+Error: Failed to create ChromaDB collection
+Solution: Check ChromaDB dependencies are correctly installed
+Check:
+  - pip list | grep chromadb
+  - Ensure chromadb>=1.1.0 is installed
+```
+
+#### 4. Callback Manager Error
+```
+Error: IndexError: pop from empty list
+Solution: System has automatic recovery mechanism, will reset callback manager and retry
+Note: This is caused by llama_index callback manager state inconsistency, handled automatically
+```
+
+#### 5. Out of Memory
+```
+Error: Out of memory
+Solution: Increase system memory or adjust document splitting parameters
+```
+
+### System Status Check
+```python
+# Check service status
+chroma_status, ollama_status = model.check_services_status()
+print(f"ChromaDB Status: {chroma_status}")
+print(f"Ollama Status: {ollama_status}")
+
+# Get ChromaDB collection info
+info = model.get_chroma_info()
+print(f"Collection Status: {info['status']}")
+print(f"Document Count: {info['total_documents']}")
+```
+
+## Configuration Options
+
+### Environment Variables
+```bash
+# DeepSeek API Key
+export DEEPSEEK_API_KEY="your_api_key_here"
+
+# ChromaDB Collection Name (optional, defaults to kflow)
+export CHROMA_COLLECTION="kflow"
+
+# Ollama Service URL (optional, defaults to localhost:11434)
+export OLLAMA_BASE_URL="http://localhost:11434"
+```
+
+### Code Configuration
+```python
+# Custom ChromaDB configuration
+chroma_repo = ChromaRepository(
+    collection_name="my_collection"
+)
+
+# Custom query engine configuration
+query_engine = FilteredQueryEngine(
+    index=index,
+    target_files=["specific_file.pdf"],  # Specific file retrieval
+    similarity_top_k=10,  # Retrieve more results
+    streaming=True
+)
+```
+
+## Performance Optimization
+
+### Recommended Configuration
+- **Memory**: At least 8GB RAM
+- **Storage**: SSD drive, at least 10GB available space
+- **CPU**: 4+ cores
+- **Network**: Stable network connection (for DeepSeek API)
+
+### Tuning Parameters
+```python
+# Document splitting parameters
+text_splitter = SentenceSplitter(
+    chunk_size=1024,      # Chunk size
+    chunk_overlap=200,    # Overlap size
+    separator=" "         # Separator
+)
+
+# Retrieval parameters
+query_engine = FilteredQueryEngine(
+    index=index,
+    similarity_top_k=5,   # Number of results
+    streaming=True        # Streaming response
+)
+```
+
+## Monitoring and Maintenance
+
+### Health Check
+```python
+# Get ChromaDB collection info
+info = model.get_chroma_info()
+print(f"Status: {info['status']}")
+print(f"Storage Type: {info['storage_type']}")
+print(f"Document Count: {info['total_documents']}")
+```
+
+### Data Cleanup
+```python
+# Clear entire collection
+model.clear_chroma_collection()
+```
+
+## Changelog
+
+### v2.0.0
+- ✅ Migrated to ChromaDB vector database
+- ✅ Integrated DeepSeek LLM and Ollama embedding models
+- ✅ Implemented custom filtered query engine
+- ✅ Support for document filtering and full knowledge base retrieval
+- ✅ Fixed callback manager error handling
+- ✅ Optimized error recovery mechanism
+
+### v1.0.0
+- ✅ Integrated Milvus vector database
+- ✅ Implemented persistent document storage
+- ✅ Added file replacement functionality
+- ✅ Added graceful degradation mechanism
+- ✅ Optimized retrieval performance
+
+## Support
+
+If you encounter issues, please check:
+1. Ollama service is running properly
+2. DeepSeek API Key is valid
+3. Network connection is stable
+4. System resources are sufficient
+5. Dependencies are correctly installed
+
+---
+
 # KFlow RAG - 基于ChromaDB的智能文档问答系统
 
 ## 概述
@@ -17,7 +302,6 @@ KFlow RAG是一个基于ChromaDB向量数据库的智能文档问答系统，支
 ### 📁 文件结构
 - `chroma_repository.py`: ChromaDB数据库操作类
 - `custom_query_engine.py`: 自定义查询引擎，支持文档过滤
-- `llm_service.py`: LLM和嵌入模型服务管理
 - `model.py`: 核心业务逻辑，集成ChromaDB存储和检索功能
 - `controller.py`: 控制器，协调View和Model之间的交互
 - `view.py`: 视图层，Streamlit用户界面
@@ -111,15 +395,6 @@ class FilteredQueryEngine(BaseQueryEngine):
     def query(self, query_str)
     def set_target_files(self, target_files)
     def get_target_files(self)
-```
-
-### ModelService类
-```python
-class ModelService:
-    def get_llm(self)  # 返回 DeepSeek LLM 实例
-    def get_embed_model(self)  # 返回 Ollama 嵌入模型实例
-    def is_llm_available(self)  # 检查 LLM 可用性
-    def is_embed_model_available(self)  # 检查嵌入模型可用性
 ```
 
 ### 存储策略
