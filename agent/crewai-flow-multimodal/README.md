@@ -281,3 +281,289 @@ We extend our gratitude to the original contributors of the AI Engineering Hub f
 ## Support
 
 For issues and questions, please open an issue in the repository or contact the development team.
+
+---
+
+# CrewAI Flow 多模态
+
+基于CrewAI的多模态RAG（检索增强生成）系统，支持处理和查询文档和音频文件。
+
+## 功能特性
+
+- **多模态支持**：支持PDF文档和音频文件（MP3、WAV、M4A、FLAC）
+- **智能处理**：使用CrewAI多智能体协作进行文档处理
+- **向量检索**：基于Milvus向量数据库的语义搜索
+- **语音转文字**：使用AssemblyAI进行音频转录
+- **统一LLM**：所有组件（CrewAI、直接LLM调用）使用DeepSeek模型
+- **智能问答**：基于DeepSeek模型的智能问答系统
+
+## 架构
+
+系统由几个关键组件组成，采用模块化架构组织：
+
+- **客户端层**：专门用于外部服务集成的客户端
+  - **DeepSeek LLM**：所有文本生成任务的统一语言模型
+  - **Ollama嵌入**：用于向量生成的本地嵌入模型
+  - **Milvus向量数据库**：高性能向量存储和检索
+  - **AssemblyAI集成**：实时音频转录服务
+
+- **工作流层**：基于CrewAI的智能工作流
+  - **CrewAI智能体**：文档处理和分析的多智能体协作
+  - **数据摄取流程**：自动化文档和音频处理
+  - **多模态RAG流程**：智能查询处理和响应生成
+
+- **命令层**：用于操作管理的命令模式实现
+  - **命令处理器**：集中式命令执行和管理
+  - **命令模式**：可扩展的命令结构，用于未来操作
+
+## 环境设置
+
+### 1. 创建.env文件
+
+在项目根目录创建`.env`文件，包含以下配置：
+
+```bash
+# DeepSeek API配置
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
+LLM_MODEL=deepseek-chat
+LLM_API_BASE=https://api.deepseek.com
+
+# AssemblyAI API配置
+ASSEMBLYAI_API_KEY=your_assemblyai_api_key_here
+
+# Milvus向量数据库配置
+MILVUS_HOST=localhost
+MILVUS_PORT=19530
+MILVUS_COLLECTION_NAME=multimodal_rag
+
+# 嵌入模型配置（Ollama本地模型）
+EMBEDDING_MODEL=nomic-embed-text:latest
+EMBEDDING_DIMENSION=768
+OLLAMA_BASE_URL=http://localhost:11434
+```
+
+### 2. API密钥设置
+
+#### DeepSeek API
+1. 访问 [DeepSeek Platform](https://platform.deepseek.com/)
+2. 注册账户并获取API密钥
+3. 将密钥添加到`DEEPSEEK_API_KEY`
+
+#### Ollama（嵌入模型）
+1. 安装Ollama：https://ollama.ai/
+2. 下载嵌入模型：`ollama pull nomic-embed-text:latest`
+3. 确保Ollama服务运行：`ollama serve`
+
+#### AssemblyAI API
+1. 访问 [AssemblyAI](https://www.assemblyai.com/)
+2. 注册账户并获取API密钥
+3. 将密钥添加到`ASSEMBLYAI_API_KEY`
+
+### 3. 安装依赖
+
+```bash
+# 推荐：使用uv安装依赖（更快更可靠）
+uv sync
+
+# 备选：使用pip安装
+pip install -r requirements.txt
+
+# 注意：项目使用.python-version中指定的Python 3.12
+```
+
+### 4. 启动服务
+
+#### 选项1：使用现有Milvus服务
+如果您的系统上已有Milvus服务运行：
+
+```bash
+# 检查Milvus服务状态
+docker ps | grep milvus
+
+# 如果Milvus正在运行，直接启动主程序
+python main.py
+```
+
+#### 选项2：启动新的Milvus服务
+如果需要启动新的Milvus服务：
+
+```bash
+# 启动Milvus数据库（使用Docker）
+docker-compose up -d
+
+# 运行主程序
+python main.py
+```
+
+### 5. 系统测试
+
+首次运行前，建议运行系统测试脚本：
+
+```bash
+# 运行系统测试
+python test_system.py
+```
+
+测试脚本将检查：
+- ✅ 所有依赖包正确安装
+- ✅ 配置文件正确
+- ✅ API密钥已配置
+- ✅ Milvus连接正常
+- ✅ Ollama嵌入模型连接正常
+- ✅ 嵌入维度一致性（768维度）
+
+## 使用方法
+
+### 基本使用
+
+1. **启动系统**：
+   ```bash
+   python main.py
+   ```
+
+2. **上传文档**：将PDF文件放在`data/`目录中
+
+3. **上传音频文件**：将音频文件（MP3、WAV等）放在`data/`目录中
+
+4. **查询系统**：使用交互界面询问关于文档的问题
+
+### 高级使用
+
+系统支持各种查询类型：
+
+- **基于文档的查询**：询问PDF内容相关问题
+- **基于音频的查询**：询问转录音频内容相关问题
+- **跨模态查询**：询问跨越多种文档类型的问题
+- **时间查询**：询问内容随时间变化的问题
+
+## 文件结构
+
+```
+├── main.py                    # 主程序文件
+├── config.py                  # 配置文件
+├── pyproject.toml             # 项目配置和依赖
+├── requirements.txt           # Python依赖（遗留）
+├── uv.lock                    # UV锁文件，用于依赖管理
+├── uv.toml                    # UV配置
+├── .python-version            # Python版本规范（3.12）
+├── docker-compose.yml         # Docker服务配置
+├── client/                    # 客户端模块目录
+│   ├── __init__.py           # 客户端包初始化
+│   ├── llm_client.py         # LLM客户端包装器
+│   ├── embedding_client.py   # 嵌入模型客户端
+│   ├── milvus_client.py      # Milvus向量数据库客户端
+│   └── assemblyai_client.py  # AssemblyAI转录客户端
+├── crewai_workflows/          # CrewAI工作流模块
+│   ├── __init__.py           # 工作流包初始化
+│   ├── crewai_client.py      # CrewAI集成客户端
+│   ├── data_ingestion_flow.py # 数据摄取工作流
+│   └── multimodal_rag_flow.py # 多模态RAG工作流
+├── command/                   # 命令模式模块
+│   ├── __init__.py           # 命令包初始化
+│   ├── command_handler.py    # 命令模式处理器
+│   └── command_pattern.py    # 命令模式实现
+├── data/                      # 数据文件目录
+│   ├── annualreport-2024.pdf # 示例PDF文档
+│   └── finance_audio.mp3     # 示例音频文件
+├── __pycache__/               # Python缓存目录
+└── .env                       # 环境变量配置（不跟踪）
+```
+
+## 技术细节
+
+### 模块化架构
+
+系统采用模块化架构构建，以便更好地维护和扩展：
+
+- **客户端层**（`client/`）：包含不同服务的专门客户端
+  - `llm_client.py`：DeepSeek LLM集成
+  - `embedding_client.py`：Ollama嵌入模型集成
+  - `milvus_client.py`：Milvus向量数据库操作
+  - `assemblyai_client.py`：音频转录服务
+
+- **工作流层**（`crewai_workflows/`）：包含基于CrewAI的工作流
+  - `crewai_client.py`：CrewAI智能体编排
+  - `data_ingestion_flow.py`：文档和音频处理工作流
+  - `multimodal_rag_flow.py`：RAG查询处理工作流
+
+- **命令层**（`command/`）：实现用于操作处理的命令模式
+  - `command_pattern.py`：基础命令模式实现
+  - `command_handler.py`：命令执行和管理
+
+### 多模态处理管道
+
+1. **文档处理**：PDF被解析和分块以优化检索
+2. **音频处理**：使用AssemblyAI转录音频文件
+3. **嵌入生成**：使用Ollama将文本块转换为向量
+4. **向量存储**：嵌入存储在Milvus中，带有元数据
+5. **查询处理**：用户查询通过相同管道处理
+6. **检索**：基于语义相似性检索相关块
+7. **生成**：使用DeepSeek LLM生成最终答案
+
+### 性能优化
+
+- **批处理**：并行处理多个文档
+- **缓存**：缓存嵌入结果以避免重新计算
+- **索引**：优化的Milvus索引以实现快速检索
+- **内存管理**：对大型文档集的高效内存使用
+
+## 故障排除
+
+### 常见问题
+
+1. **Milvus连接失败**：
+   - 确保Milvus服务正在运行
+   - 检查`.env`中的连接参数
+   - 验证网络连接
+
+2. **找不到Ollama嵌入模型**：
+   - 运行`ollama pull nomic-embed-text:latest`
+   - 检查Ollama服务状态
+   - 验证配置中的模型名称
+
+3. **API密钥问题**：
+   - 验证API密钥在`.env`中正确设置
+   - 检查API配额和计费
+   - 确保对API端点的网络访问
+
+### 性能调优
+
+- **嵌入维度**：根据需求调整`EMBEDDING_DIMENSION`
+- **块大小**：修改块大小以优化检索性能
+- **批处理大小**：根据可用内存调整批处理大小
+
+## 贡献
+
+1. Fork仓库
+2. 创建功能分支
+3. 进行更改
+4. 如适用，添加测试
+5. 提交拉取请求
+
+## 贡献者
+
+### 张逸
+AI战略顾问和AI原生应用开发者，DDD布道者，南京大学DevOps+研究实验室企业导师。
+
+- GitHub: [@agiledon](https://github.com/agiledon)
+
+### 原始项目致谢
+本仓库基于并大幅重构了[AI Engineering Hub](https://github.com/patchy631/ai-engineering-hub)中的[multimodal-rag-assemblyai](https://github.com/patchy631/ai-engineering-hub)项目。
+
+**关键改进和增强：**
+- **代码重构**：完整的架构重新设计，提高了模块化和可维护性
+- **DeepSeek集成**：完全支持DeepSeek LLM模型作为主要语言模型
+- **Ollama本地部署**：与Ollama集成，用于nomic-embed-text嵌入模型的本地部署
+
+我们向AI Engineering Hub的原始贡献者表示感谢，感谢他们提供了基础的多模态RAG实现。
+
+## 注意事项
+
+1. **嵌入模型限制**：DeepSeek API目前不支持嵌入模型，因此使用OpenAI的text-embedding-3-small模型
+2. **网络要求**：需要访问DeepSeek、OpenAI和AssemblyAI API服务
+3. **Milvus数据库**：Milvus数据库服务必须运行，向量检索功能才能正常工作
+4. **资源要求**：确保有足够的内存和CPU资源以获得最佳性能
+
+## 支持
+
+如有问题和疑问，请在仓库中创建issue或联系开发团队。
