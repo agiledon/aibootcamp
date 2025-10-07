@@ -144,6 +144,7 @@ The generated code follows these standards:
 ## Contributors
 
 ### Zhang Yi
+
 AI Strategy Consultant and AI-Native Application Developer, DDD Evangelist, Enterprise Mentor at Nanjing University DevOps+ Research Lab.
 
 - GitHub: [@agiledon](https://github.com/agiledon)
@@ -308,6 +309,7 @@ uv run src/crewai_ddd_expert/main.py
 ## 贡献者
 
 ### 张逸
+
 AI战略顾问和AI原生应用开发者，DDD布道者，南京大学DevOps+研究实验室企业导师。
 
 - GitHub: [@agiledon](https://github.com/agiledon)

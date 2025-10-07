@@ -209,6 +209,7 @@ When running the example query, the agent will:
 ## Contributors
 
 ### Zhang Yi
+
 AI Strategy Consultant and AI-Native Application Developer, DDD Evangelist, Enterprise Mentor at Nanjing University DevOps+ Research Lab.
 
 - GitHub: [@agiledon](https://github.com/agiledon)
@@ -441,6 +442,7 @@ agent_executor = AgentExecutor(
 ## 贡献者
 
 ### 张逸
+
 AI战略顾问和AI原生应用开发者，DDD布道者，南京大学DevOps+研究实验室企业导师。
 
 - GitHub: [@agiledon](https://github.com/agiledon)
