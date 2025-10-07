@@ -172,3 +172,6 @@ rag/document-summary-rag/city_index/
 
 # KFlow RAG volumes directory
 rag/document-chat-rag/volumes/
+
+# Output directories (generated files)
+**/output/
