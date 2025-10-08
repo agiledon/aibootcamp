@@ -2,15 +2,18 @@
 
 An MCP-powered financial analysis system using CrewAI multi-agent collaboration and DeepSeek LLM. This project demonstrates how to build an intelligent stock analysis tool that generates executable Python code for data visualization and analysis.
 
+**🇨🇳 中国A股支持**: 本项目已更新为支持中国A股市场（沪深股市），使用 `akshare` 库替代 `yfinance`，无需API密钥，访问稳定。
+
 ## Features
 
 - **Multi-Agent Collaboration**: Three specialized agents working in sequence
 - **MCP Integration**: Standardized tool interface via Model Context Protocol
-- **Stock Data Analysis**: Automated stock market data retrieval using yfinance
+- **Chinese A-Share Support**: Automated Chinese stock market data retrieval using akshare
 - **Code Generation**: Generates executable Python scripts for visualization
 - **DeepSeek LLM**: Uses Ollama-served DeepSeek-R1 7B model
 - **Automatic Code Execution**: Reviews and executes generated code
 - **Interactive Tools**: Stock analysis, code saving, and plot generation
+- **No API Key Required**: akshare provides free access to Chinese stock data
 
 ## Architecture
 
@@ -69,20 +72,20 @@ An MCP-powered financial analysis system using CrewAI multi-agent collaboration 
 
 1. **Install Ollama and DeepSeek Model**:
 
-   ```bash
+```bash
    # Install Ollama
-   curl -fsSL https://ollama.com/install.sh | sh
-   
+curl -fsSL https://ollama.com/install.sh | sh
+
    # Pull the DeepSeek-R1 7B model
    ollama pull deepseek-r1:7b
    ```
 
 2. **Install Project Dependencies**:
 
-   ```bash
+```bash
    # Using uv (recommended)
-   uv sync
-   ```
+ uv sync
+```
 
 ## Usage
 
@@ -145,25 +148,36 @@ uv run stock_analysis.py
 
 ## Example Queries
 
-**Query 1: Basic Stock Analysis**
+### Chinese A-Share Examples (中国A股示例)
+
+**Query 1: 基本股票分析**
 ```
-"Show me Tesla's stock performance over the last 3 months"
+"分析贵州茅台(600519)过去一年的股票表现"
 ```
 
-**Query 2: Stock Comparison**
+**Query 2: 股票对比**
 ```
-"Compare Apple and Microsoft stocks for the past year"
-```
-
-**Query 3: Volume Analysis**
-```
-"Analyze the trading volume of Amazon stock for the last month"
+"对比招商银行和工商银行过去一年的表现"
 ```
 
-**Query 4: Year-to-Date Performance**
+**Query 3: 交易量分析**
 ```
-"Plot YTD stock gain of Tesla"
+"分析比亚迪过去3个月的交易量变化"
 ```
+
+**Query 4: 价格趋势**
+```
+"显示宁德时代过去半年的股价走势"
+```
+
+### Quick Reference (快速参考)
+- 贵州茅台: 600519
+- 工商银行: 601398  
+- 招商银行: 600036
+- 比亚迪: 002594
+- 宁德时代: 300750
+
+See `CN_STOCK_GUIDE.md` for more stock codes and examples.
 
 ## Project Structure
 
@@ -308,7 +322,7 @@ This project's code is copied from the [AI Engineering Hub](https://github.com/p
 - [AI Engineering Hub - Financial Analyst DeepSeek](https://github.com/patchy631/ai-engineering-hub/tree/main/financial-analyst-deepseek)
 - [MCP Documentation](https://modelcontextprotocol.io/)
 - [CrewAI Documentation](https://docs.crewai.com/)
-- [yfinance Documentation](https://pypi.org/project/yfinance/)
+- [akshare Documentation](https://akshare.akfamily.xyz/)
 
 We extend our gratitude to the AI Engineering Hub contributors for providing this excellent financial analysis implementation.
 
@@ -322,15 +336,18 @@ For issues and questions, please open an issue in the repository or contact the 
 
 使用CrewAI多智能体协作和DeepSeek LLM的MCP驱动金融分析系统。本项目展示了如何构建一个智能股票分析工具，可以生成用于数据可视化和分析的可执行Python代码。
 
+**🇨🇳 中国A股支持**: 本项目已更新为支持中国A股市场（沪深股市），使用 `akshare` 库替代 `yfinance`，无需API密钥，访问稳定。
+
 ## 功能特性
 
 - **多智能体协作**：三个专门的智能体按顺序工作
 - **MCP集成**：通过Model Context Protocol的标准化工具接口
-- **股票数据分析**：使用yfinance自动检索股票市场数据
+- **中国A股支持**：使用akshare自动检索中国股票市场数据
 - **代码生成**：生成用于可视化的可执行Python脚本
 - **DeepSeek LLM**：使用Ollama提供的DeepSeek-R1 7B模型
 - **自动代码执行**：审查和执行生成的代码
 - **交互式工具**：股票分析、代码保存和图表生成
+- **无需API密钥**：akshare提供免费的中国股市数据访问
 
 ## 架构
 
@@ -465,25 +482,36 @@ uv run stock_analysis.py
 
 ## 示例查询
 
+### 中国A股示例
+
 **查询1：基本股票分析**
 ```
-"显示特斯拉过去3个月的股票表现"
+"分析贵州茅台(600519)过去一年的股票表现"
 ```
 
 **查询2：股票对比**
 ```
-"对比苹果和微软过去一年的股票"
+"对比招商银行和工商银行过去一年的表现"
 ```
 
 **查询3：交易量分析**
 ```
-"分析亚马逊股票过去一个月的交易量"
+"分析比亚迪过去3个月的交易量变化"
 ```
 
-**查询4：年初至今表现**
+**查询4：价格趋势**
 ```
-"绘制特斯拉的YTD股票涨幅"
+"显示宁德时代过去半年的股价走势"
 ```
+
+### 常用股票代码
+- 贵州茅台: 600519
+- 工商银行: 601398  
+- 招商银行: 600036
+- 比亚迪: 002594
+- 宁德时代: 300750
+
+详细股票代码和使用说明请参考 `CN_STOCK_GUIDE.md`。
 
 ## 项目结构
 
@@ -621,6 +649,7 @@ AI战略顾问和AI原生应用开发者，DDD布道者，南京大学DevOps+研
 
 **主要修改：**
 - 更新依赖到最新版本
+- **替换yfinance为akshare以支持中国A股市场**
 - 针对特定用例的轻微代码调整
 - 增强文档和示例
 
@@ -628,7 +657,7 @@ AI战略顾问和AI原生应用开发者，DDD布道者，南京大学DevOps+研
 - [AI Engineering Hub - Financial Analyst DeepSeek](https://github.com/patchy631/ai-engineering-hub/tree/main/financial-analyst-deepseek)
 - [MCP文档](https://modelcontextprotocol.io/)
 - [CrewAI文档](https://docs.crewai.com/)
-- [yfinance文档](https://pypi.org/project/yfinance/)
+- [akshare文档](https://akshare.akfamily.xyz/)
 
 我们向AI Engineering Hub贡献者表示感谢，感谢他们提供了这个优秀的金融分析实现。
 

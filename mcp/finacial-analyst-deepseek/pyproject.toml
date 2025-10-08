@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "akshare>=1.17.63",
     "crewai",
     "crewai-tools",
     "fastmcp>=2.10.5",
@@ -12,3 +13,7 @@ dependencies = [
     "seaborn>=0.13.2",
     "yfinance",
 ]
+
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true

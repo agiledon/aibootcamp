@@ -1,0 +1,7 @@
+# 使用清华大学镜像源
+index-url = "https://pypi.tuna.tsinghua.edu.cn/simple/"
+
+# 备用镜像源（如果需要的话）
+# index-url = "https://mirrors.aliyun.com/pypi/simple/"
+# index-url = "https://pypi.douban.com/simple/"
+# index-url = "https://pypi.mirrors.ustc.edu.cn/simple/" 

@@ -7,22 +7,30 @@ mcp = FastMCP("financial-analyst")
 @mcp.tool()
 def analyze_stock(query: str) -> str:
     """
-    Analyzes stock market data based on the query and generates executable Python code for analysis and visualization.
-    Returns a formatted Python script ready for execution.
+    分析中国A股市场数据并生成可执行的Python代码用于分析和可视化。
+    返回格式化的、可直接执行的Python脚本。
     
-    The query is a string that must contain the stock symbol (e.g., TSLA, AAPL, NVDA, etc.), 
-    timeframe (e.g., 1d, 1mo, 1y), and action to perform (e.g., plot, analyze, compare).
-
-    Example queries:
-    - "Show me Tesla's stock performance over the last 3 months"
-    - "Compare Apple and Microsoft stocks for the past year"
-    - "Analyze the trading volume of Amazon stock for the last month"
+    查询字符串必须包含股票名称或代码（如贵州茅台、600519、工商银行等），
+    时间周期（如30天、3个月、1年），以及要执行的操作（如绘图、分析、对比）。
+    
+    示例查询：
+    - "分析贵州茅台过去一年的股票表现"
+    - "显示工商银行最近3个月的股价走势"
+    - "分析比亚迪过去半年的交易量变化"
+    - "对比招商银行和平安银行过去一年的表现"
+    
+    支持的股票示例：
+    - 贵州茅台 (600519)
+    - 工商银行 (601398)
+    - 平安银行 (000001)
+    - 招商银行 (600036)
+    - 比亚迪 (002594)
 
     Args:
-        query (str): The query to analyze the stock market data.
+        query (str): 用于分析中国A股市场数据的查询
     
     Returns:
-        str: A nicely formatted python code as a string.
+        str: 格式化的Python代码字符串
     """
     try:
         result = run_financial_analysis(query)

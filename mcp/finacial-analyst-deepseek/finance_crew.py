@@ -1,7 +1,7 @@
 import re
 import json
 import os
-import yfinance as yf
+import akshare as ak
 from pydantic import BaseModel, Field
 from crewai import Agent, Task, Crew, Process, LLM
 from crewai_tools import CodeInterpreterTool, FileReadTool
@@ -12,9 +12,10 @@ load_dotenv()
 
 class QueryAnalysisOutput(BaseModel):
     """Structured output for the query analysis task."""
-    symbols: list[str] = Field(..., description="List of stock ticker symbols (e.g., ['TSLA', 'AAPL']).")
-    timeframe: str = Field(..., description="Time period (e.g., '1d', '1mo', '1y').")
-    action: str = Field(..., description="Action to be performed (e.g., 'fetch', 'plot').")
+    stock_codes: list[str] = Field(..., description="股票代码列表 (例如: ['600519', '601398'])，600开头为沪市，000/002/300开头为深市")
+    stock_names: list[str] = Field(..., description="股票名称列表 (例如: ['贵州茅台', '工商银行'])")
+    timeframe: str = Field(..., description="时间周期 (例如: '日K', '周K', '月K'，或具体天数如 '30', '90', '365').")
+    action: str = Field(..., description="执行的操作 (例如: '获取数据', '绘图', '分析').")
 
 llm = LLM(
     model="ollama/deepseek-r1:7b",
@@ -27,39 +28,78 @@ llm = LLM(
 #     # temperature=0.7
 # )
 
-# 1) Query parser agent
+# 1) Query parser agent - 专注中国A股市场
 query_parser_agent = Agent(
-    role="Stock Data Analyst",
-    goal="Extract stock details and fetch required data from this user query: {query}.",
-    backstory="You are a financial analyst specializing in stock market data retrieval.",
+    role="中国A股数据分析师",
+    goal="从用户查询中提取中国A股股票详细信息: {query}. 识别股票代码（如600519代表贵州茅台）和时间周期。",
+    backstory="""你是专门研究中国A股市场的金融分析师，熟悉沪深股市的股票代码规则：
+    - 沪市主板：600开头（如600519贵州茅台、601398工商银行）
+    - 深市主板：000开头（如000001平安银行）
+    - 中小板：002开头
+    - 创业板：300开头
+    你能够准确识别股票名称并转换为对应的股票代码。""",
     llm=llm,
     verbose=True,
     memory=True,
 )
 
 query_parsing_task = Task(
-    description="Analyze the user query and extract stock details.",
-    expected_output="A dictionary with keys: 'symbol', 'timeframe', 'action'.",
+    description="""分析用户查询并提取中国A股股票详细信息。
+    需要识别：
+    1. 股票代码（6位数字）
+    2. 股票名称（如贵州茅台、工商银行）
+    3. 时间周期（天数或K线类型）
+    4. 要执行的操作
+    
+    常见股票示例：
+    - 贵州茅台: 600519
+    - 工商银行: 601398
+    - 平安银行: 000001
+    - 招商银行: 600036
+    - 比亚迪: 002594
+    """,
+    expected_output="包含stock_codes, stock_names, timeframe, action的字典",
     output_pydantic=QueryAnalysisOutput,
     agent=query_parser_agent,
 )
 
 
-# 2) Code writer agent
+# 2) Code writer agent - 专注中国A股
 code_writer_agent = Agent(
-    role="Senior Python Developer",
-    goal="Write Python code to visualize stock data.",
-    backstory="""You are a Senior Python developer specializing in stock market data visualization. 
-                 You are also a Pandas, Matplotlib and yfinance library expert.
-                 You are skilled at writing production-ready Python code""",
+    role="高级Python开发工程师",
+    goal="编写Python代码以可视化中国A股股票数据",
+    backstory="""你是专门从事中国股市数据可视化的高级Python开发者。
+                 你精通 akshare、Pandas、Matplotlib 库。
+                 你知道如何使用akshare获取中国股市数据：
+                 - 使用 ak.stock_zh_a_hist() 获取A股历史数据
+                 - 股票代码格式：6位数字（如600519）
+                 - 数据包含：日期、开盘、收盘、最高、最低、成交量等
+                 - 生成的代码需要包含中文标签和清晰的可视化
+                 你擅长编写生产级Python代码，包含完善的错误处理和中文注释。""",
     llm=llm,
     verbose=True,
 )
 
 code_writer_task = Task(
-    description="""Write Python code to visualize stock data based on the inputs from the stock analyst
-                   where you would find stock symbol, timeframe and action.""",
-    expected_output="A clean and executable Python script file (.py) for stock visualization.",
+    description="""基于股票分析师提供的信息编写Python代码以可视化中国A股股票数据。
+    
+    必须使用 akshare 库获取数据：
+    - 函数：ak.stock_zh_a_hist(symbol=股票代码, period="daily", adjust="qfq")
+    - 参数说明：
+      * symbol: 股票代码（6位数字，如"600519"）
+      * period: "daily"（日线）、"weekly"（周线）、"monthly"（月线）
+      * adjust: "qfq"（前复权）、"hfq"（后复权）、""（不复权）
+    
+    代码要求：
+    1. 使用 akshare 获取股票历史数据
+    2. 计算关键指标（价格变化、收益率、波动率）
+    3. 创建至少4个图表（价格走势、成交量、收益率分布、累计收益）
+    4. 所有图表标签使用中文
+    5. 设置中文字体支持
+    6. 包含完善的数据统计输出
+    7. 添加详细的中文注释
+    """,
+    expected_output="一个干净、可执行的Python脚本文件(.py)，用于中国A股股票可视化分析。",
     agent=code_writer_agent,
 )
 
@@ -98,6 +138,6 @@ def run_financial_analysis(query):
 
 if __name__ == "__main__":
     # Run the crew with a query
-    # query = input("Enter the stock to analyze: ")
-    result = crew.kickoff(inputs={"query": "Plot YTD stock gain of Tesla"})
+    # query = input("请输入要分析的股票（名称或代码）：")
+    result = crew.kickoff(inputs={"query": "分析贵州茅台过去一年的股票表现"})
     print(result.raw)
