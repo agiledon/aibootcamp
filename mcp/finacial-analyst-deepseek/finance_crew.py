@@ -98,8 +98,13 @@ code_writer_task = Task(
     5. 设置中文字体支持
     6. 包含完善的数据统计输出
     7. 添加详细的中文注释
+    
+    重要：生成的代码必须将所有输出文件（Python脚本和图表）保存到output目录：
+    - 使用 output/ 作为输出路径前缀
+    - 如果output目录不存在，代码中需要创建它
+    - 图表文件保存格式：output/{股票代码}_{股票名称}_analysis_{时间戳}.png
     """,
-    expected_output="一个干净、可执行的Python脚本文件(.py)，用于中国A股股票可视化分析。",
+    expected_output="一个干净、可执行的Python脚本文件(.py)，用于中国A股股票可视化分析。所有生成的文件都保存在output目录中。",
     agent=code_writer_agent,
 )
 

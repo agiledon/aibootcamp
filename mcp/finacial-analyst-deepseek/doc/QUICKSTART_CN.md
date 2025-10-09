@@ -51,6 +51,8 @@ uv run maotai_analysis_example.py
 # 编辑 finance_crew.py 中的查询
 # 将第142行的查询改为你想分析的股票
 uv run finance_crew.py
+
+# 注意: 生成的代码和图表将保存在 output/ 目录下
 ```
 
 ### 方式3: 通过MCP服务（高级用法）
@@ -129,8 +131,9 @@ result = crew.kickoff(inputs={"query": "显示宁德时代过去3个月的交易
 ```
 
 ### 图表文件
+- **保存位置**: `output/` 目录
 - 文件名格式：`{股票代码}_{股票名称}_analysis_{时间戳}.png`
-- 示例：`600519_贵州茅台_analysis_20251008_222219.png`
+- 示例：`output/600519_贵州茅台_analysis_20251008_222219.png`
 - 包含4个子图：
   1. 股票价格走势（含日内波动范围）
   2. 成交量柱状图

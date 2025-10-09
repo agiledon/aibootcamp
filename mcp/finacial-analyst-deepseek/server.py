@@ -1,8 +1,14 @@
+import os
+from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 from finance_crew import run_financial_analysis
 
 # create FastMCP instance
 mcp = FastMCP("financial-analyst")
+
+# 确保output目录存在
+OUTPUT_DIR = Path(__file__).parent / "output"
+OUTPUT_DIR.mkdir(exist_ok=True)
 
 @mcp.tool()
 def analyze_stock(query: str) -> str:
@@ -40,31 +46,53 @@ def analyze_stock(query: str) -> str:
     
 
 @mcp.tool()
-def save_code(code: str) -> str:
+def save_code(code: str, filename: str = "stock_analysis.py") -> str:
     """
-    Expects a nicely formatted, working and executable python code as input in form of a string. 
-    Save the given code to a file stock_analysis.py, make sure the code is a valid python file, nicely formatted and ready to execute.
+    接受格式化、可工作和可执行的Python代码作为字符串输入。
+    将代码保存到output目录下的指定文件，确保代码是有效的Python文件，格式良好并可执行。
 
     Args:
-        code (str): The nicely formatted, working and executable python code as string.
+        code (str): 格式化、可工作和可执行的Python代码字符串
+        filename (str): 保存的文件名（默认：stock_analysis.py）
     
     Returns:
-        str: A message indicating the code was saved successfully.
+        str: 指示代码保存成功的消息
     """
     try:
-        with open('stock_analysis.py', 'w') as f:
+        output_file = OUTPUT_DIR / filename
+        with open(output_file, 'w', encoding='utf-8') as f:
             f.write(code)
-        return "Code saved to stock_analysis.py"
+        return f"代码已保存到 output/{filename}"
     except Exception as e:
         return f"Error: {e}"
 
 @mcp.tool()
-def run_code_and_show_plot() -> str:
+def run_code_and_show_plot(filename: str = "stock_analysis.py") -> str:
     """
-    Run the code in stock_analysis.py and generate the plot
+    运行output目录下指定的Python代码文件并生成图表
+    
+    Args:
+        filename (str): 要执行的文件名（默认：stock_analysis.py）
+    
+    Returns:
+        str: 执行结果消息
     """
-    with open('stock_analysis.py', 'r') as f:
-        exec(f.read())
+    try:
+        output_file = OUTPUT_DIR / filename
+        if not output_file.exists():
+            return f"错误: 文件 output/{filename} 不存在"
+        
+        # 切换到output目录执行，以便图表也保存在output目录
+        original_dir = os.getcwd()
+        try:
+            os.chdir(OUTPUT_DIR)
+            with open(filename, 'r', encoding='utf-8') as f:
+                exec(f.read())
+            return f"代码执行成功，图表已保存到 output/ 目录"
+        finally:
+            os.chdir(original_dir)
+    except Exception as e:
+        return f"执行错误: {str(e)}"
 
 # Run the server locally
 if __name__ == "__main__":
