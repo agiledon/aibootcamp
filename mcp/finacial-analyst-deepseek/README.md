@@ -177,7 +177,7 @@ uv run stock_analysis.py
 - 比亚迪: 002594
 - 宁德时代: 300750
 
-See `CN_STOCK_GUIDE.md` for more stock codes and examples.
+See `doc/CN_STOCK_GUIDE.md` for more stock codes and examples.
 
 ## Project Structure
 
@@ -185,11 +185,14 @@ See `CN_STOCK_GUIDE.md` for more stock codes and examples.
 finacial-analyst-deepseek/
 ├── server.py                    # MCP server with financial tools
 ├── finance_crew.py              # CrewAI multi-agent workflow
-├── stock_analysis.py            # Generated stock analysis code
-├── tesla_analysis_demo.py       # Tesla analysis example
-├── tesla_analysis_final.py      # Final Tesla analysis version
-├── tesla_analysis.py            # Tesla analysis script
-├── simple_server.py             # Simple MCP server implementation
+├── doc/                         # Documentation directory
+│   ├── ARCHITECTURE_COMPARISON.md  # Architecture comparison guide
+│   ├── CHANGELOG_CN.md            # Change log (Chinese)
+│   ├── CN_STOCK_GUIDE.md          # Chinese stock guide
+│   ├── EXECUTION_FLOW.md          # Execution flow explanation
+│   ├── MIGRATION_SUMMARY.md       # Migration summary
+│   └── QUICKSTART_CN.md           # Quick start guide (Chinese)
+├── output/                      # Generated files directory (git-ignored)
 ├── pyproject.toml               # Project configuration
 ├── uv.lock                      # UV lock file
 └── README.md                    # This file
@@ -246,20 +249,27 @@ llm = LLM(
 The agents will generate code like:
 
 ```python
-import yfinance as yf
+import akshare as ak
+import pandas as pd
 import matplotlib.pyplot as plt
 
-# Fetch Tesla stock data
-ticker = yf.Ticker("TSLA")
-data = ticker.history(period="3mo")
+# 设置中文字体支持
+plt.rcParams['font.sans-serif'] = ['Arial Unicode MS', 'SimHei', 'STHeiti']
+plt.rcParams['axes.unicode_minus'] = False
 
-# Plot closing prices
+# 获取贵州茅台股票数据（过去一年）
+df = ak.stock_zh_a_hist(symbol="600519", period="daily", adjust="qfq")
+df = df.tail(365)  # 最近365天
+df['日期'] = pd.to_datetime(df['日期'])
+df = df.set_index('日期')
+
+# 绘制收盘价走势
 plt.figure(figsize=(12, 6))
-plt.plot(data.index, data['Close'])
-plt.title('Tesla Stock Performance - Last 3 Months')
-plt.xlabel('Date')
-plt.ylabel('Price (USD)')
-plt.grid(True)
+plt.plot(df.index, df['收盘'], linewidth=2)
+plt.title('贵州茅台股票表现 - 过去一年', fontsize=16, fontweight='bold')
+plt.xlabel('日期', fontsize=12)
+plt.ylabel('价格 (¥)', fontsize=12)
+plt.grid(True, alpha=0.3)
 plt.show()
 ```
 
@@ -511,7 +521,7 @@ uv run stock_analysis.py
 - 比亚迪: 002594
 - 宁德时代: 300750
 
-详细股票代码和使用说明请参考 `CN_STOCK_GUIDE.md`。
+详细股票代码和使用说明请参考 `doc/CN_STOCK_GUIDE.md`。
 
 ## 项目结构
 
@@ -519,11 +529,14 @@ uv run stock_analysis.py
 finacial-analyst-deepseek/
 ├── server.py                    # 带有金融工具的MCP服务器
 ├── finance_crew.py              # CrewAI多智能体工作流
-├── stock_analysis.py            # 生成的股票分析代码
-├── tesla_analysis_demo.py       # 特斯拉分析示例
-├── tesla_analysis_final.py      # 特斯拉分析最终版本
-├── tesla_analysis.py            # 特斯拉分析脚本
-├── simple_server.py             # 简单MCP服务器实现
+├── doc/                         # 文档目录
+│   ├── ARCHITECTURE_COMPARISON.md  # 架构对比指南
+│   ├── CHANGELOG_CN.md            # 更新日志（中文）
+│   ├── CN_STOCK_GUIDE.md          # 中国股市指南
+│   ├── EXECUTION_FLOW.md          # 执行流程说明
+│   ├── MIGRATION_SUMMARY.md       # 迁移总结
+│   └── QUICKSTART_CN.md           # 快速开始指南（中文）
+├── output/                      # 生成文件目录（被git忽略）
 ├── pyproject.toml               # 项目配置
 ├── uv.lock                      # UV锁文件
 └── README.md                    # 本文件
@@ -580,20 +593,27 @@ llm = LLM(
 智能体将生成如下代码：
 
 ```python
-import yfinance as yf
+import akshare as ak
+import pandas as pd
 import matplotlib.pyplot as plt
 
-# 获取特斯拉股票数据
-ticker = yf.Ticker("TSLA")
-data = ticker.history(period="3mo")
+# 设置中文字体支持
+plt.rcParams['font.sans-serif'] = ['Arial Unicode MS', 'SimHei', 'STHeiti']
+plt.rcParams['axes.unicode_minus'] = False
 
-# 绘制收盘价
+# 获取贵州茅台股票数据（过去一年）
+df = ak.stock_zh_a_hist(symbol="600519", period="daily", adjust="qfq")
+df = df.tail(365)  # 最近365天
+df['日期'] = pd.to_datetime(df['日期'])
+df = df.set_index('日期')
+
+# 绘制收盘价走势
 plt.figure(figsize=(12, 6))
-plt.plot(data.index, data['Close'])
-plt.title('特斯拉股票表现 - 过去3个月')
-plt.xlabel('日期')
-plt.ylabel('价格 (美元)')
-plt.grid(True)
+plt.plot(df.index, df['收盘'], linewidth=2)
+plt.title('贵州茅台股票表现 - 过去一年', fontsize=16, fontweight='bold')
+plt.xlabel('日期', fontsize=12)
+plt.ylabel('价格 (¥)', fontsize=12)
+plt.grid(True, alpha=0.3)
 plt.show()
 ```
 
