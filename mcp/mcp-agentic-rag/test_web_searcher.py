@@ -3,13 +3,13 @@
 测试WebSearcher类的功能
 """
 
-from rag_code import WebSearcher
+from web_searcher import BrightDataSearcher
 
 def test_web_searcher_initialization():
-    """测试WebSearcher初始化"""
-    print("测试1: WebSearcher初始化")
+    """测试BrightDataSearcher初始化"""
+    print("测试1: BrightDataSearcher初始化")
     try:
-        searcher = WebSearcher()
+        searcher = BrightDataSearcher()
         print("✅ WebSearcher初始化成功")
         print(f"   - Host: {searcher.host}")
         print(f"   - Port: {searcher.port}")
@@ -24,10 +24,10 @@ def test_web_searcher_initialization():
 
 
 def test_web_searcher_search():
-    """测试WebSearcher搜索功能"""
-    print("\n测试2: WebSearcher搜索功能")
+    """测试BrightDataSearcher搜索功能"""
+    print("\n测试2: BrightDataSearcher搜索功能")
     try:
-        searcher = WebSearcher()
+        searcher = BrightDataSearcher()
         
         # 执行一个简单的搜索测试
         query = "machine learning basics"

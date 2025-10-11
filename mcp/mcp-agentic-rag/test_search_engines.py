@@ -4,7 +4,7 @@
 使用策略模式支持BrightData、DuckDuckGo、Bing
 """
 
-from rag_code import WebSearcher, BrightDataSearcher, DuckDuckGoSearcher, BingSearcher
+from web_searcher import WebSearcher, BrightDataSearcher, DuckDuckGoSearcher, BingSearcher
 
 
 def test_duckduckgo_searcher():

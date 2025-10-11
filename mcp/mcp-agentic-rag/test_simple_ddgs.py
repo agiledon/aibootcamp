@@ -49,7 +49,7 @@ def test_classes_import():
     """测试搜索器类导入"""
     print("\n测试3: 搜索器类导入")
     try:
-        from rag_code import WebSearcher, BrightDataSearcher, DuckDuckGoSearcher, BingSearcher
+        from web_searcher import WebSearcher, BrightDataSearcher, DuckDuckGoSearcher, BingSearcher
         print("✅ 所有搜索器类导入成功")
         print("  - WebSearcher (抽象基类)")
         print("  - BrightDataSearcher")
@@ -65,7 +65,7 @@ def test_duckduckgo_searcher_instance():
     """测试DuckDuckGoSearcher实例化"""
     print("\n测试4: DuckDuckGoSearcher实例化")
     try:
-        from rag_code import DuckDuckGoSearcher
+        from web_searcher import DuckDuckGoSearcher
         
         searcher = DuckDuckGoSearcher(region='wt-wt', max_results=3)
         print("✅ DuckDuckGoSearcher实例化成功")

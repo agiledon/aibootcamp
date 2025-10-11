@@ -1,7 +1,8 @@
 # server.py
 import os
 from mcp.server.fastmcp import FastMCP
-from rag_code import *
+from rag_retriever import EmbedData, QdrantVDB, RagRetriever, new_faq_text
+from web_searcher import WebSearcher, BrightDataSearcher, DuckDuckGoSearcher, BingSearcher
 
 # Create an MCP server
 mcp = FastMCP("MCP-RAG-app",
@@ -29,7 +30,7 @@ def machine_learning_faq_retrieval_tool(query: str) -> str:
     if not isinstance(query, str):
         raise ValueError("query must be a string")
     
-    retriever = Retriever(QdrantVDB("ml_faq_collection"), EmbedData())
+    retriever = RagRetriever(QdrantVDB("ml_faq_collection"), EmbedData())
     response = retriever.search(query)
 
     return response
