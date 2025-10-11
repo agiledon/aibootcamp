@@ -3,7 +3,11 @@
 测试WebSearcher类的功能
 """
 
-from web_searcher import BrightDataSearcher
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from mcp_agentic_rag import BrightDataSearcher
 
 def test_web_searcher_initialization():
     """测试BrightDataSearcher初始化"""

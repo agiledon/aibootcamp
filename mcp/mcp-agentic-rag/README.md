@@ -8,8 +8,10 @@ An agentic RAG (Retrieval-Augmented Generation) system powered by Model Context 
 - **MCP Integration**: Standardized tool interface via Model Context Protocol
 - **Qdrant Vector Database**: High-performance vector storage and retrieval
 - **HuggingFace Embeddings**: Local embedding model for semantic search
-- **Web Search Fallback**: Bright Data integration for real-time web information
+- **Multiple Search Engines**: DuckDuckGo (default, free), Bright Data, Bing
+- **Strategy Pattern**: Easily switch between search engines via configuration
 - **Machine Learning FAQ**: Pre-indexed ML knowledge base
+- **Standard Python Structure**: Clean src/tests/docs organization
 
 ## Architecture
 
@@ -71,13 +73,20 @@ An agentic RAG (Retrieval-Augmented Generation) system powered by Model Context 
 
 2. **Set up Environment Variables**:
 
-   Create a `.env` file:
+   Configure `src/mcp_agentic_rag/.env` file:
    ```bash
+   # Copy from example
+   cp src/mcp_agentic_rag/.env.example src/mcp_agentic_rag/.env
+   
+   # Edit the .env file:
+   WEB_SEARCH_ENGINE=duckduckgo  # duckduckgo (default, free), brightdata, or bing
+   
+   # Only if using BrightData:
    BRIGHT_DATA_USERNAME=your_brightdata_username
    BRIGHT_DATA_PASSWORD=your_brightdata_password
    ```
 
-   Get credentials from [Bright Data](https://brightdata.com/)
+   Get Bright Data credentials from [Bright Data](https://brightdata.com/) (optional)
 
 3. **Install Project Dependencies**:
 
@@ -88,12 +97,25 @@ An agentic RAG (Retrieval-Augmented Generation) system powered by Model Context 
 
 ## Usage
 
-### Step 1: Initialize the Knowledge Base
+### Step 1: Configure Search Engine (Optional)
 
-First, run the RAG code to create and populate the Qdrant collection:
+The project defaults to DuckDuckGo (free, no API key required). To use a different search engine:
 
 ```bash
-uv run rag_code.py
+# Edit src/mcp_agentic_rag/.env
+WEB_SEARCH_ENGINE=duckduckgo  # or: brightdata, bing
+
+# For BrightData only:
+BRIGHT_DATA_USERNAME=your_username
+BRIGHT_DATA_PASSWORD=your_password
+```
+
+### Step 2: Initialize the Knowledge Base
+
+Run the RAG retriever code to create and populate the Qdrant collection:
+
+```bash
+uv run python -m mcp_agentic_rag.rag_retriever
 ```
 
 This will:
@@ -101,17 +123,17 @@ This will:
 - Generate embeddings for ML FAQ documents
 - Index the data in the vector database
 
-### Step 2: Start the MCP Server
+### Step 3: Start the MCP Server
 
 Start the MCP server to expose the tools:
 
 ```bash
-uv run server.py
+uv run src/mcp_agentic_rag/server.py
 ```
 
 The server will start on `http://127.0.0.1:8080`
 
-### Step 3: Configure MCP Client
+### Step 4: Configure MCP Client
 
 In your MCP client (e.g., Cursor IDE), add the server configuration:
 
@@ -119,17 +141,19 @@ In your MCP client (e.g., Cursor IDE), add the server configuration:
 {
   "mcpServers": {
     "mcp-rag-app": {
-      "command": "python",
-      "args": ["/absolute/path/to/server.py"],
-      "host": "127.0.0.1",
-      "port": 8080,
-      "timeout": 30000
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/absolute/path/to/mcp-agentic-rag",
+        "run",
+        "src/mcp_agentic_rag/server.py"
+      ]
     }
   }
 }
 ```
 
-### Step 4: Interact with the Agent
+### Step 5: Interact with the Agent
 
 In your MCP client, you can now ask questions:
 
@@ -150,16 +174,37 @@ Agent: [Searches web via Bright Data] According to recent sources...
 
 ```
 mcp-agentic-rag/
-├── server.py              # MCP server with RAG tools
-├── rag_code.py            # RAG implementation (embeddings, Qdrant)
-├── pyproject.toml         # Project configuration
-├── uv.lock                # UV lock file
-└── README.md              # This file
+├── src/                          # Source code
+│   └── mcp_agentic_rag/         # Main package
+│       ├── __init__.py          # Package initialization
+│       ├── rag_retriever.py     # RAG retriever (Qdrant, embeddings)
+│       ├── web_searcher.py      # Web searchers (strategy pattern)
+│       ├── server.py            # MCP server with tools
+│       ├── .env                 # Environment configuration
+│       └── .env.example         # Configuration template
+│
+├── tests/                       # Test files
+│   ├── __init__.py
+│   ├── test_refactoring.py     # Refactoring validation tests
+│   ├── test_simple_ddgs.py     # Basic DDGS tests
+│   ├── test_search_engines.py  # Search engine tests
+│   └── test_web_searcher.py    # Web searcher tests
+│
+├── docs/                        # Documentation
+│   └── QUICKSTART.md           # Quick start guide
+│
+├── pyproject.toml              # Project configuration
+├── uv.lock                     # UV lock file
+└── README.md                   # This file
 ```
 
 ## Technical Details
 
-### RAG Components
+### Module Architecture
+
+The project uses a clean separation of concerns with three main modules:
+
+#### 1. `rag_retriever.py` - RAG Components
 
 **EmbedData Class:**
 - Generates embeddings using HuggingFace models
@@ -171,10 +216,40 @@ mcp-agentic-rag/
 - Creates collections with optimized settings
 - Handles data ingestion and search
 
-**Retriever Class:**
+**RagRetriever Class** (formerly `Retriever`):
 - Combines embeddings and vector database
-- Performs semantic search
+- Performs semantic search on local knowledge base
 - Returns formatted search results
+
+#### 2. `web_searcher.py` - Web Search Components (Strategy Pattern)
+
+**WebSearcher (Abstract Base Class):**
+- Defines common interface for all web searchers
+- Ensures consistent return format
+
+**BrightDataSearcher:**
+- Uses Bright Data proxy service
+- Requires API credentials
+- High-quality Google search results
+
+**DuckDuckGoSearcher** (Default, Recommended):
+- Free, open-source, no API key required
+- Privacy-focused search
+- Good quality results
+
+**BingSearcher:**
+- Via DuckDuckGo aggregation
+- Free, no configuration needed
+
+#### 3. `server.py` - MCP Server
+
+**Strategy Selector:**
+- `_get_web_searcher()` - Selects search engine based on config
+- Supports switching via `WEB_SEARCH_ENGINE` environment variable
+
+**MCP Tools:**
+- `machine_learning_faq_retrieval_tool` - Local knowledge base
+- `bright_data_web_search_tool` - Web search (configurable engine)
 
 ### MCP Server Configuration
 
@@ -242,7 +317,8 @@ This project's code is copied from the [AI Engineering Hub](https://github.com/p
 
 **Key Modifications:**
 - Updated dependencies to latest versions
-- Minor code adjustments for compatibility
+- Introduced DuckDuckGo for web search with configurable multi-engine support
+- Optimized code structure for improved readability and extensibility
 - Enhanced documentation
 
 **Key References:**
@@ -332,13 +408,20 @@ For issues and questions, please open an issue in the repository or contact the 
 
 2. **设置环境变量**：
 
-   创建`.env`文件：
+   配置`src/mcp_agentic_rag/.env`文件：
    ```bash
+   # 从示例复制
+   cp src/mcp_agentic_rag/.env.example src/mcp_agentic_rag/.env
+   
+   # 编辑.env文件：
+   WEB_SEARCH_ENGINE=duckduckgo  # duckduckgo（默认，免费）、brightdata或bing
+   
+   # 仅在使用BrightData时需要：
    BRIGHT_DATA_USERNAME=your_brightdata_username
    BRIGHT_DATA_PASSWORD=your_brightdata_password
    ```
 
-   从 [Bright Data](https://brightdata.com/) 获取凭据
+   从 [Bright Data](https://brightdata.com/) 获取凭据（可选）
 
 3. **安装项目依赖**：
 
@@ -349,12 +432,25 @@ For issues and questions, please open an issue in the repository or contact the 
 
 ## 使用方法
 
-### 步骤1：初始化知识库
+### 步骤1：配置搜索引擎（可选）
 
-首先，运行RAG代码创建并填充Qdrant集合：
+项目默认使用DuckDuckGo（免费、无需API密钥）。如需使用其他搜索引擎：
 
 ```bash
-uv run rag_code.py
+# 编辑 src/mcp_agentic_rag/.env
+WEB_SEARCH_ENGINE=duckduckgo  # 可选：duckduckgo, brightdata, bing
+
+# 仅在使用BrightData时需要：
+BRIGHT_DATA_USERNAME=your_username
+BRIGHT_DATA_PASSWORD=your_password
+```
+
+### 步骤2：初始化知识库
+
+运行RAG检索器代码创建并填充Qdrant集合：
+
+```bash
+uv run python -m mcp_agentic_rag.rag_retriever
 ```
 
 这将：
@@ -362,17 +458,17 @@ uv run rag_code.py
 - 为ML FAQ文档生成嵌入
 - 在向量数据库中索引数据
 
-### 步骤2：启动MCP服务器
+### 步骤3：启动MCP服务器
 
 启动MCP服务器以公开工具：
 
 ```bash
-uv run server.py
+uv run src/mcp_agentic_rag/server.py
 ```
 
 服务器将在 `http://127.0.0.1:8080` 上启动
 
-### 步骤3：配置MCP客户端
+### 步骤4：配置MCP客户端
 
 在您的MCP客户端（如Cursor IDE）中，添加服务器配置：
 
@@ -380,17 +476,19 @@ uv run server.py
 {
   "mcpServers": {
     "mcp-rag-app": {
-      "command": "python",
-      "args": ["/absolute/path/to/server.py"],
-      "host": "127.0.0.1",
-      "port": 8080,
-      "timeout": 30000
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/absolute/path/to/mcp-agentic-rag",
+        "run",
+        "src/mcp_agentic_rag/server.py"
+      ]
     }
   }
 }
 ```
 
-### 步骤4：与智能体交互
+### 步骤5：与智能体交互
 
 在您的MCP客户端中，现在可以提问：
 
@@ -411,16 +509,37 @@ uv run server.py
 
 ```
 mcp-agentic-rag/
-├── server.py              # 带有RAG工具的MCP服务器
-├── rag_code.py            # RAG实现（嵌入、Qdrant）
-├── pyproject.toml         # 项目配置
-├── uv.lock                # UV锁文件
-└── README.md              # 本文件
+├── src/                          # 源代码
+│   └── mcp_agentic_rag/         # 主包
+│       ├── __init__.py          # 包初始化
+│       ├── rag_retriever.py     # RAG检索器（Qdrant、嵌入）
+│       ├── web_searcher.py      # Web搜索器（策略模式）
+│       ├── server.py            # MCP服务器
+│       ├── .env                 # 环境配置
+│       └── .env.example         # 配置模板
+│
+├── tests/                       # 测试文件
+│   ├── __init__.py
+│   ├── test_refactoring.py     # 重构验证测试
+│   ├── test_simple_ddgs.py     # 基本DDGS测试
+│   ├── test_search_engines.py  # 搜索引擎测试
+│   └── test_web_searcher.py    # Web搜索器测试
+│
+├── docs/                        # 文档
+│   └── QUICKSTART.md           # 快速开始指南
+│
+├── pyproject.toml              # 项目配置
+├── uv.lock                     # UV锁文件
+└── README.md                   # 本文件
 ```
 
 ## 技术细节
 
-### RAG组件
+### 模块架构
+
+项目采用清晰的职责分离，包含三个主要模块：
+
+#### 1. `rag_retriever.py` - RAG组件
 
 **EmbedData类：**
 - 使用HuggingFace模型生成嵌入
@@ -432,10 +551,40 @@ mcp-agentic-rag/
 - 使用优化设置创建集合
 - 处理数据摄取和搜索
 
-**Retriever类：**
+**RagRetriever类**（原`Retriever`）：
 - 结合嵌入和向量数据库
-- 执行语义搜索
+- 对本地知识库执行语义搜索
 - 返回格式化的搜索结果
+
+#### 2. `web_searcher.py` - Web搜索组件（策略模式）
+
+**WebSearcher（抽象基类）：**
+- 定义所有web搜索器的通用接口
+- 确保返回格式一致
+
+**BrightDataSearcher：**
+- 使用Bright Data代理服务
+- 需要API凭证
+- 高质量Google搜索结果
+
+**DuckDuckGoSearcher**（默认，推荐）：
+- 免费、开源、无需API密钥
+- 注重隐私的搜索
+- 良好的结果质量
+
+**BingSearcher：**
+- 通过DuckDuckGo聚合
+- 免费、无需配置
+
+#### 3. `server.py` - MCP服务器
+
+**策略选择器：**
+- `_get_web_searcher()` - 根据配置选择搜索引擎
+- 支持通过`WEB_SEARCH_ENGINE`环境变量切换
+
+**MCP工具：**
+- `machine_learning_faq_retrieval_tool` - 本地知识库
+- `bright_data_web_search_tool` - Web搜索（可配置引擎）
 
 ### MCP服务器配置
 
@@ -503,7 +652,8 @@ AI战略顾问和AI原生应用开发者，DDD布道者，南京大学DevOps+研
 
 **主要修改：**
 - 更新依赖到最新版本
-- 轻微代码调整以提高兼容性
+- 引入DuckDuckGo完成Web搜索，并支持多种Web搜索的可配置
+- 优化了代码结构，提升了代码可读性和可扩展性
 - 增强文档
 
 **主要参考资料：**

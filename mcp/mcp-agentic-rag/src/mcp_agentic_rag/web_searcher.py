@@ -47,7 +47,7 @@ class BrightDataSearcher(WebSearcher):
         
         # 确定.env文件路径
         if env_file is None:
-            # 使用当前文件所在目录的.env文件
+            # 使用项目根目录的.env文件（向上两级：src/mcp_agentic_rag -> 项目根）
             current_dir = Path(__file__).parent
             env_file = current_dir / ".env"
         else:

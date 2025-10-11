@@ -3,6 +3,11 @@
 简单测试ddgs库的基本功能
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+
 def test_ddgs_import():
     """测试ddgs导入"""
     print("测试1: ddgs包导入")
@@ -49,7 +54,7 @@ def test_classes_import():
     """测试搜索器类导入"""
     print("\n测试3: 搜索器类导入")
     try:
-        from web_searcher import WebSearcher, BrightDataSearcher, DuckDuckGoSearcher, BingSearcher
+        from mcp_agentic_rag import WebSearcher, BrightDataSearcher, DuckDuckGoSearcher, BingSearcher
         print("✅ 所有搜索器类导入成功")
         print("  - WebSearcher (抽象基类)")
         print("  - BrightDataSearcher")
@@ -65,7 +70,7 @@ def test_duckduckgo_searcher_instance():
     """测试DuckDuckGoSearcher实例化"""
     print("\n测试4: DuckDuckGoSearcher实例化")
     try:
-        from web_searcher import DuckDuckGoSearcher
+        from mcp_agentic_rag import DuckDuckGoSearcher
         
         searcher = DuckDuckGoSearcher(region='wt-wt', max_results=3)
         print("✅ DuckDuckGoSearcher实例化成功")

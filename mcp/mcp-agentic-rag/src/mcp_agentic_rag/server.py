@@ -1,8 +1,8 @@
 # server.py
 import os
 from mcp.server.fastmcp import FastMCP
-from rag_retriever import EmbedData, QdrantVDB, RagRetriever, new_faq_text
-from web_searcher import WebSearcher, BrightDataSearcher, DuckDuckGoSearcher, BingSearcher
+from mcp_agentic_rag.rag_retriever import EmbedData, QdrantVDB, RagRetriever, new_faq_text
+from mcp_agentic_rag.web_searcher import WebSearcher, BrightDataSearcher, DuckDuckGoSearcher, BingSearcher
 
 # Create an MCP server
 mcp = FastMCP("MCP-RAG-app",

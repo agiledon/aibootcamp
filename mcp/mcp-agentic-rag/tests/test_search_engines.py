@@ -4,7 +4,11 @@
 使用策略模式支持BrightData、DuckDuckGo、Bing
 """
 
-from web_searcher import WebSearcher, BrightDataSearcher, DuckDuckGoSearcher, BingSearcher
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from mcp_agentic_rag import WebSearcher, BrightDataSearcher, DuckDuckGoSearcher, BingSearcher
 
 
 def test_duckduckgo_searcher():
@@ -116,7 +120,7 @@ def test_strategy_pattern():
     # 测试默认策略
     print("当前搜索引擎配置: WEB_SEARCH_ENGINE =", os.getenv("WEB_SEARCH_ENGINE", "duckduckgo"))
     
-    from server import _get_web_searcher
+    from mcp_agentic_rag.server import _get_web_searcher
     
     try:
         searcher = _get_web_searcher()
@@ -134,7 +138,7 @@ def test_server_tool_integration():
     print("="*70)
     
     try:
-        from server import bright_data_web_search_tool
+        from mcp_agentic_rag.server import bright_data_web_search_tool
         
         query = "what is deep learning"
         print(f"执行搜索: '{query}'")
