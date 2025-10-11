@@ -47,36 +47,11 @@ def bright_data_web_search_tool(query: str) -> list[str]:
     if not isinstance(query, str):
         raise ValueError("query must be a string")
     
-    import os
-    import ssl
-    import requests
-    from dotenv import load_dotenv
-
-    # Load environment variables and configure SSL
-    load_dotenv()
-    ssl._create_default_https_context = ssl._create_unverified_context
-
-    # Bright Data configuration
-    host = 'brd.superproxy.io'
-    port = 33335
+    # 使用WebSearcher类进行搜索
+    web_searcher = WebSearcher()
+    response = web_searcher.search(query)
     
-    # get username and password from brightdata.com
-    username = os.getenv("BRIGHT_DATA_USERNAME")
-    password = os.getenv("BRIGHT_DATA_PASSWORD")
-
-    proxy_url = f'http://{username}:{password}@{host}:{port}'
-    proxies = {
-        'http': proxy_url,
-        'https': proxy_url
-    }
-
-    # Format query and make request
-    formatted_query = "+".join(query.split(" "))
-    url = f"https://www.google.com/search?q={formatted_query}&brd_json=1&num=50"
-    response = requests.get(url, proxies=proxies, verify=False)
-
-    # Return organic search results
-    return response.json()['organic']
+    return response
 
 if __name__ == "__main__":
     print("Starting MCP server at http://127.0.0.1:8080 on port 8080")

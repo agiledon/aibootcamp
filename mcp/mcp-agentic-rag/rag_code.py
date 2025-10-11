@@ -1,4 +1,4 @@
-from llama_index.embeddings import HuggingFaceEmbedding
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from tqdm import tqdm
 from qdrant_client import models
 from qdrant_client import QdrantClient
@@ -184,3 +184,105 @@ class Retriever:
 
         final_output = "\n\n---\n\n".join(combined_prompt)
         return final_output
+
+
+class WebSearcher:
+    """
+    Web搜索器类，使用Bright Data进行网络搜索
+    """
+    
+    def __init__(self, username=None, password=None, env_file=None):
+        """
+        初始化Web搜索器
+        
+        Args:
+            username: Bright Data用户名（如果为None，则从.env文件读取）
+            password: Bright Data密码（如果为None，则从.env文件读取）
+            env_file: .env文件路径（如果为None，则使用当前项目目录下的.env）
+        """
+        import os
+        from pathlib import Path
+        from dotenv import load_dotenv
+        
+        # 确定.env文件路径
+        if env_file is None:
+            # 使用当前文件所在目录的.env文件
+            current_dir = Path(__file__).parent
+            env_file = current_dir / ".env"
+        else:
+            env_file = Path(env_file)
+        
+        # 加载项目的.env文件
+        if env_file.exists():
+            load_dotenv(dotenv_path=env_file)
+        else:
+            # 如果.env文件不存在，尝试创建示例文件
+            env_example = env_file.parent / ".env.example"
+            if not env_example.exists():
+                self._create_env_example(env_example)
+            raise FileNotFoundError(
+                f".env file not found at {env_file}. "
+                f"Please copy .env.example to .env and configure your Bright Data credentials."
+            )
+        
+        # Bright Data配置
+        self.host = 'brd.superproxy.io'
+        self.port = 33335
+        self.username = username or os.getenv("BRIGHT_DATA_USERNAME")
+        self.password = password or os.getenv("BRIGHT_DATA_PASSWORD")
+        
+        if not self.username or not self.password:
+            raise ValueError(
+                "Bright Data credentials not provided. "
+                "Please set BRIGHT_DATA_USERNAME and BRIGHT_DATA_PASSWORD in your .env file."
+            )
+        
+        # 配置代理
+        self.proxy_url = f'http://{self.username}:{self.password}@{self.host}:{self.port}'
+        self.proxies = {
+            'http': self.proxy_url,
+            'https': self.proxy_url
+        }
+    
+    @staticmethod
+    def _create_env_example(env_example_path):
+        """创建.env.example示例文件"""
+        example_content = """# Bright Data Configuration
+# Get your credentials from https://brightdata.com/
+
+BRIGHT_DATA_USERNAME=your_brightdata_username
+BRIGHT_DATA_PASSWORD=your_brightdata_password
+"""
+        with open(env_example_path, 'w', encoding='utf-8') as f:
+            f.write(example_content)
+    
+    def search(self, query, num_results=50):
+        """
+        搜索给定查询的网络信息
+        
+        Args:
+            query: 搜索查询字符串
+            num_results: 返回结果数量（默认50）
+            
+        Returns:
+            list[dict]: 有机搜索结果列表
+        """
+        import ssl
+        import requests
+        
+        # 配置SSL
+        ssl._create_default_https_context = ssl._create_unverified_context
+        
+        # 格式化查询并发起请求
+        formatted_query = "+".join(query.split(" "))
+        url = f"https://www.google.com/search?q={formatted_query}&brd_json=1&num={num_results}"
+        
+        try:
+            response = requests.get(url, proxies=self.proxies, verify=False)
+            response.raise_for_status()
+            
+            # 返回有机搜索结果
+            return response.json().get('organic', [])
+        
+        except requests.RequestException as e:
+            raise RuntimeError(f"Web search failed: {str(e)}")
