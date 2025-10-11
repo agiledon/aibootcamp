@@ -1,8 +1,8 @@
 # server.py
 import os
 from mcp.server.fastmcp import FastMCP
-from mcp_agentic_rag.rag_retriever import EmbedData, QdrantVDB, RagRetriever, new_faq_text
-from mcp_agentic_rag.web_searcher import WebSearcher, BrightDataSearcher, DuckDuckGoSearcher, BingSearcher
+from mcp_agentic_rag.rag_retriever import EmbedData, QdrantVDB, RagRetriever
+from mcp_agentic_rag.web_searcher import BrightDataSearcher, DuckDuckGoSearcher, BingSearcher
 
 # Create an MCP server
 mcp = FastMCP("MCP-RAG-app",
@@ -55,7 +55,7 @@ def _get_web_searcher():
 
 
 @mcp.tool()
-def web_search_tool(query: str) -> list[str]:
+def web_search_tool(query: str) -> str:
     """
     Use this tool when the user asks about a specific topic or question 
     that is not related to general machine learning.
@@ -64,7 +64,7 @@ def web_search_tool(query: str) -> list[str]:
         query: str -> The user query to search for information
 
     Output:
-        context: list[dict] -> list of most relevant web search results
+        context: str -> formatted web search results as text
         
     Supported search engines:
         - duckduckgo (default, free, no API key required)
@@ -77,9 +77,18 @@ def web_search_tool(query: str) -> list[str]:
     
     # 使用策略模式获取搜索器
     web_searcher = _get_web_searcher()
-    response = web_searcher.search(query)
+    results = web_searcher.search(query)
     
-    return response
+    # 格式化结果为字符串（与machine_learning_faq_retrieval_tool保持一致）
+    formatted_results = []
+    for i, result in enumerate(results[:5], 1):  # 只返回前5条
+        formatted_results.append(
+            f"{i}. {result.get('title', 'N/A')}\n"
+            f"   URL: {result.get('url', 'N/A')}\n"
+            f"   {result.get('snippet', 'N/A')}"
+        )
+    
+    return "\n\n---\n\n".join(formatted_results)
 
 if __name__ == "__main__":
     print("Starting MCP server at http://127.0.0.1:8080 on port 8080")

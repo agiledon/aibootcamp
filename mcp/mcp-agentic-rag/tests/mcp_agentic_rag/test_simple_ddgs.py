@@ -3,10 +3,6 @@
 简单测试ddgs库的基本功能
 """
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 
 def test_ddgs_import():
     """测试ddgs导入"""

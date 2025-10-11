@@ -3,10 +3,6 @@
 测试WebSearcher类的功能
 """
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 from mcp_agentic_rag import BrightDataSearcher
 
 def test_web_searcher_initialization():
@@ -62,7 +58,7 @@ def test_consistency_with_server():
     """测试与server.py的一致性"""
     print("\n测试3: 与server.py工具函数的一致性")
     try:
-        from server import bright_data_web_search_tool
+        from mcp_agentic_rag.server import web_search_tool as bright_data_web_search_tool
         
         # 测试工具函数
         query = "test query"

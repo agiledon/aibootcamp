@@ -165,6 +165,28 @@ class RagRetriever:
         
         self.vector_db = vector_db
         self.embeddata = embeddata
+        self._ensure_collection_ready()
+    
+    def _ensure_collection_ready(self):
+        """确保向量数据库集合已创建并填充数据"""
+        # 检查集合是否存在
+        if not self.vector_db.client.collection_exists(collection_name=self.vector_db.collection_name):
+            print(f"集合 {self.vector_db.collection_name} 不存在，正在创建...")
+            
+            # 创建集合
+            self.vector_db.create_collection()
+            print("✅ 集合创建成功")
+            
+            # 生成嵌入（如果还没有生成）
+            if not self.embeddata.embeddings:
+                print("正在生成嵌入...")
+                self.embeddata.embed(new_faq_text)
+                print(f"✅ 生成了 {len(self.embeddata.embeddings)} 个嵌入向量")
+            
+            # 导入数据
+            print("正在导入数据到向量数据库...")
+            self.vector_db.ingest_data(self.embeddata)
+            print("✅ 数据导入完成")
 
     def search(self, query):
         query_embedding = self.embeddata.embed_model.get_query_embedding(query)

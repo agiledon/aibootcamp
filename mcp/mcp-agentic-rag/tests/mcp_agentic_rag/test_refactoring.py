@@ -4,9 +4,6 @@
 验证所有功能正常工作
 """
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 
 def test_module_imports():
@@ -48,12 +45,12 @@ def test_server_imports():
     try:
         from mcp_agentic_rag.server import (
             machine_learning_faq_retrieval_tool,
-            bright_data_web_search_tool,
+            web_search_tool,
             _get_web_searcher
         )
         print("✅ server.py 导入成功")
         print("   - machine_learning_faq_retrieval_tool")
-        print("   - bright_data_web_search_tool")
+        print("   - web_search_tool")
         print("   - _get_web_searcher")
         return True
     except ImportError as e:
@@ -144,14 +141,14 @@ def test_file_structure():
     
     from pathlib import Path
     
-    base_dir = Path(__file__).parent.parent  # 项目根目录
+    base_dir = Path(__file__).parent.parent.parent  # 项目根目录（tests/mcp_agentic_rag -> tests -> 根）
     
     files_to_check = [
         ('src/mcp_agentic_rag/rag_retriever.py', 'RAG检索器模块'),
         ('src/mcp_agentic_rag/web_searcher.py', 'Web搜索器模块'),
         ('src/mcp_agentic_rag/server.py', 'MCP服务器'),
         ('src/mcp_agentic_rag/__init__.py', '模块初始化文件'),
-        ('tests/test_simple_ddgs.py', '测试文件'),
+        ('tests/mcp_agentic_rag/test_simple_ddgs.py', '测试文件'),
     ]
     
     files_should_not_exist = [

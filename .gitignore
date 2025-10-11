@@ -176,3 +176,7 @@ rag/document-chat-rag/volumes/
 
 # Output directories (generated files)
 **/output/
+
+# MCP Agentic RAG cache and storage
+mcp/mcp-agentic-rag/hf_cache/
+mcp/mcp-agentic-rag/qdrant_storage/

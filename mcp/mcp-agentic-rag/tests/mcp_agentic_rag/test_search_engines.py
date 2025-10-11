@@ -4,10 +4,6 @@
 使用策略模式支持BrightData、DuckDuckGo、Bing
 """
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 from mcp_agentic_rag import BrightDataSearcher, DuckDuckGoSearcher, BingSearcher
 
 

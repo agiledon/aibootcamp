@@ -48,7 +48,7 @@ An agentic RAG (Retrieval-Augmented Generation) system powered by Model Context 
 - **Output**: Most relevant documents from Qdrant vector database
 - **Use Case**: Questions about general machine learning concepts
 
-### 2. bright_data_web_search_tool
+### 2. web_search_tool
 - **Function**: Search the web for current information
 - **Input**: Search query string
 - **Output**: List of relevant web search results
@@ -110,22 +110,9 @@ BRIGHT_DATA_USERNAME=your_username
 BRIGHT_DATA_PASSWORD=your_password
 ```
 
-### Step 2: Initialize the Knowledge Base
+### Step 2: Start the MCP Server
 
-Run the RAG retriever code to create and populate the Qdrant collection:
-
-```bash
-uv run python -m mcp_agentic_rag.rag_retriever
-```
-
-This will:
-- Create a Qdrant collection named `ml_faq_collection`
-- Generate embeddings for ML FAQ documents
-- Index the data in the vector database
-
-### Step 3: Start the MCP Server
-
-Start the MCP server to expose the tools:
+The knowledge base will be automatically initialized on first use. Simply start the MCP server:
 
 ```bash
 uv run src/mcp_agentic_rag/server.py
@@ -133,7 +120,12 @@ uv run src/mcp_agentic_rag/server.py
 
 The server will start on `http://127.0.0.1:8080`
 
-### Step 4: Configure MCP Client
+**Note:** When you first use `machine_learning_faq_retrieval_tool`, the system will automatically:
+- Create the Qdrant collection `ml_faq_collection`
+- Generate embeddings for ML FAQ documents
+- Index the data in the vector database
+
+### Step 3: Configure MCP Client
 
 In your MCP client (e.g., Cursor IDE), add the server configuration:
 
@@ -153,7 +145,7 @@ In your MCP client (e.g., Cursor IDE), add the server configuration:
 }
 ```
 
-### Step 5: Interact with the Agent
+### Step 4: Interact with the Agent
 
 In your MCP client, you can now ask questions:
 
@@ -184,11 +176,12 @@ mcp-agentic-rag/
 │       └── .env.example         # Configuration template
 │
 ├── tests/                       # Test files
-│   ├── __init__.py
-│   ├── test_refactoring.py     # Refactoring validation tests
-│   ├── test_simple_ddgs.py     # Basic DDGS tests
-│   ├── test_search_engines.py  # Search engine tests
-│   └── test_web_searcher.py    # Web searcher tests
+│   └── mcp_agentic_rag/        # Test package (mirrors src structure)
+│       ├── __init__.py
+│       ├── test_refactoring.py     # Refactoring validation tests
+│       ├── test_simple_ddgs.py     # Basic DDGS tests
+│       ├── test_search_engines.py  # Search engine tests
+│       └── test_web_searcher.py    # Web searcher tests
 │
 ├── docs/                        # Documentation
 │   └── QUICKSTART.md           # Quick start guide
@@ -383,7 +376,7 @@ For issues and questions, please open an issue in the repository or contact the 
 - **输出**：来自Qdrant向量数据库的最相关文档
 - **使用场景**：关于一般机器学习概念的问题
 
-### 2. bright_data_web_search_tool
+### 2. web_search_tool
 - **功能**：在网络上搜索当前信息
 - **输入**：搜索查询字符串
 - **输出**：相关网络搜索结果列表
@@ -399,12 +392,12 @@ For issues and questions, please open an issue in the repository or contact the 
 
 1. **启动Qdrant数据库**：
 
-   ```bash
+```bash
    # 使用Docker
-   docker run -p 6333:6333 -p 6334:6334 \
-     -v $(pwd)/qdrant_storage:/qdrant/storage:z \
-     qdrant/qdrant
-   ```
+docker run -p 6333:6333 -p 6334:6334 \
+-v $(pwd)/qdrant_storage:/qdrant/storage:z \
+qdrant/qdrant
+```
 
 2. **设置环境变量**：
 
@@ -445,22 +438,9 @@ BRIGHT_DATA_USERNAME=your_username
 BRIGHT_DATA_PASSWORD=your_password
 ```
 
-### 步骤2：初始化知识库
+### 步骤2：启动MCP服务器
 
-运行RAG检索器代码创建并填充Qdrant集合：
-
-```bash
-uv run python -m mcp_agentic_rag.rag_retriever
-```
-
-这将：
-- 创建名为`ml_faq_collection`的Qdrant集合
-- 为ML FAQ文档生成嵌入
-- 在向量数据库中索引数据
-
-### 步骤3：启动MCP服务器
-
-启动MCP服务器以公开工具：
+知识库将在首次使用时自动初始化。直接启动MCP服务器：
 
 ```bash
 uv run src/mcp_agentic_rag/server.py
@@ -468,7 +448,12 @@ uv run src/mcp_agentic_rag/server.py
 
 服务器将在 `http://127.0.0.1:8080` 上启动
 
-### 步骤4：配置MCP客户端
+**注意：** 首次使用`machine_learning_faq_retrieval_tool`时，系统将自动：
+- 创建Qdrant集合`ml_faq_collection`
+- 为ML FAQ文档生成嵌入
+- 在向量数据库中索引数据
+
+### 步骤3：配置MCP客户端
 
 在您的MCP客户端（如Cursor IDE）中，添加服务器配置：
 
@@ -488,7 +473,7 @@ uv run src/mcp_agentic_rag/server.py
 }
 ```
 
-### 步骤5：与智能体交互
+### 步骤4：与智能体交互
 
 在您的MCP客户端中，现在可以提问：
 
@@ -519,11 +504,12 @@ mcp-agentic-rag/
 │       └── .env.example         # 配置模板
 │
 ├── tests/                       # 测试文件
-│   ├── __init__.py
-│   ├── test_refactoring.py     # 重构验证测试
-│   ├── test_simple_ddgs.py     # 基本DDGS测试
-│   ├── test_search_engines.py  # 搜索引擎测试
-│   └── test_web_searcher.py    # Web搜索器测试
+│   └── mcp_agentic_rag/        # 测试包（镜像src结构）
+│       ├── __init__.py
+│       ├── test_refactoring.py     # 重构验证测试
+│       ├── test_simple_ddgs.py     # 基本DDGS测试
+│       ├── test_search_engines.py  # 搜索引擎测试
+│       └── test_web_searcher.py    # Web搜索器测试
 │
 ├── docs/                        # 文档
 │   └── QUICKSTART.md           # 快速开始指南
