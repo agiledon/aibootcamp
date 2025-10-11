@@ -55,12 +55,8 @@ def _get_web_searcher():
 
 
 @mcp.tool()
-def bright_data_web_search_tool(query: str) -> list[str]:
+def web_search_tool(query: str) -> list[str]:
     """
-    在网络上搜索信息。
-    支持多种搜索引擎：DuckDuckGo（默认，免费）、Bright Data、Bing。
-    可通过环境变量WEB_SEARCH_ENGINE配置搜索引擎。
-    
     Use this tool when the user asks about a specific topic or question 
     that is not related to general machine learning.
 
