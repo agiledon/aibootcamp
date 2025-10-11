@@ -186,9 +186,33 @@ class Retriever:
         return final_output
 
 
-class WebSearcher:
+from abc import ABC, abstractmethod
+
+
+class WebSearcher(ABC):
     """
-    Web搜索器类，使用Bright Data进行网络搜索
+    Web搜索器抽象基类
+    定义了web搜索的通用接口
+    """
+    
+    @abstractmethod
+    def search(self, query, num_results=50):
+        """
+        搜索给定查询的网络信息
+        
+        Args:
+            query: 搜索查询字符串
+            num_results: 返回结果数量（默认50）
+            
+        Returns:
+            list[dict]: 搜索结果列表
+        """
+        pass
+
+
+class BrightDataSearcher(WebSearcher):
+    """
+    使用Bright Data进行网络搜索的实现
     """
     
     def __init__(self, username=None, password=None, env_file=None):
@@ -286,3 +310,114 @@ BRIGHT_DATA_PASSWORD=your_brightdata_password
         
         except requests.RequestException as e:
             raise RuntimeError(f"Web search failed: {str(e)}")
+
+
+class DuckDuckGoSearcher(WebSearcher):
+    """
+    使用DuckDuckGo进行网络搜索的实现（免费、开源、无需API密钥）
+    """
+    
+    def __init__(self, region='cn-zh', safesearch='moderate', max_results=50):
+        """
+        初始化DuckDuckGo搜索器
+        
+        Args:
+            region: 搜索区域（cn-zh=中国中文, us-en=美国英文, wt-wt=无区域）
+            safesearch: 安全搜索级别（on/moderate/off）
+            max_results: 最大返回结果数（默认50）
+        """
+        self.region = region
+        self.safesearch = safesearch
+        self.max_results = max_results
+    
+    def search(self, query, num_results=None):
+        """
+        使用DuckDuckGo搜索
+        
+        Args:
+            query: 搜索查询字符串
+            num_results: 返回结果数量（如果为None，使用初始化时的max_results）
+            
+        Returns:
+            list[dict]: 搜索结果列表，每个结果包含title、href、body等字段
+        """
+        from ddgs import DDGS
+        
+        num_results = num_results or self.max_results
+        
+        try:
+            # 创建DDGS实例并执行搜索
+            results = DDGS().text(
+                query,  # 第一个位置参数
+                region=self.region,
+                safesearch=self.safesearch,
+                max_results=num_results
+            )
+            
+            # 转换为统一格式（与BrightData保持一致）
+            formatted_results = []
+            for result in results:
+                formatted_results.append({
+                    'title': result.get('title', ''),
+                    'url': result.get('href', ''),
+                    'snippet': result.get('body', ''),
+                    'description': result.get('body', ''),
+                })
+            
+            return formatted_results
+        
+        except Exception as e:
+            raise RuntimeError(f"DuckDuckGo search failed: {str(e)}")
+
+
+class BingSearcher(WebSearcher):
+    """
+    使用Bing搜索（通过duckduckgo_search库的备用接口）
+    注：实际上DuckDuckGo聚合了多个搜索引擎的结果
+    """
+    
+    def __init__(self, max_results=50):
+        """
+        初始化Bing搜索器
+        
+        Args:
+            max_results: 最大返回结果数（默认50）
+        """
+        self.max_results = max_results
+    
+    def search(self, query, num_results=None):
+        """
+        使用DuckDuckGo执行搜索（聚合结果包含Bing）
+        
+        Args:
+            query: 搜索查询字符串
+            num_results: 返回结果数量
+            
+        Returns:
+            list[dict]: 搜索结果列表
+        """
+        from ddgs import DDGS
+        
+        num_results = num_results or self.max_results
+        
+        try:
+            # DuckDuckGo会聚合多个搜索引擎的结果
+            results = DDGS().text(
+                query,  # 第一个位置参数
+                max_results=num_results
+            )
+            
+            # 转换为统一格式
+            formatted_results = []
+            for result in results:
+                formatted_results.append({
+                    'title': result.get('title', ''),
+                    'url': result.get('href', ''),
+                    'snippet': result.get('body', ''),
+                    'description': result.get('body', ''),
+                })
+            
+            return formatted_results
+        
+        except Exception as e:
+            raise RuntimeError(f"Bing search (via DuckDuckGo) failed: {str(e)}")
