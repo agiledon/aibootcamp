@@ -238,7 +238,7 @@ class DocumentChatView:
         col1, col2 = st.columns([6, 1])
         
         with col1:
-            st.header("🤖 和DeepSeek对话")
+            st.header("🤖 和知流KFlow对话")
         
         with col2:
             if st.button("🗑️ 清空", help="清空聊天记录"):
@@ -358,6 +358,81 @@ class DocumentChatView:
                 st.warning("⚠️ Ollama: 不可用")
             else:
                 st.error("❌ Ollama: 连接失败")
+    
+    def show_memory_stats(self, memory_stats: Dict[str, Any]):
+        """
+        显示对话记忆状态信息
+        
+        Args:
+            memory_stats: 记忆统计信息字典
+        """
+        with st.sidebar:
+            st.markdown("---")
+            st.header("🧠 对话记忆")
+            
+            # 提取统计信息
+            total_tokens = memory_stats.get("total_tokens", 0)
+            max_tokens = memory_stats.get("max_tokens", 8000)
+            usage_percentage = memory_stats.get("usage_percentage", 0)
+            message_count = memory_stats.get("message_count", 0)
+            has_summary = memory_stats.get("has_summary", False)
+            
+            # 显示 token 使用情况
+            st.write(f"**Token 使用:** {total_tokens} / {max_tokens}")
+            
+            # 显示进度条
+            if usage_percentage < 50:
+                st.progress(usage_percentage / 100, text=f"{usage_percentage:.1f}%")
+            elif usage_percentage < 80:
+                st.progress(usage_percentage / 100, text=f"⚠️ {usage_percentage:.1f}%")
+            else:
+                st.progress(usage_percentage / 100, text=f"🔴 {usage_percentage:.1f}%")
+            
+            # 显示消息数量
+            st.write(f"**对话轮次:** {message_count // 2}")
+            
+            # 显示摘要状态
+            if has_summary:
+                st.success("✅ 已启用智能摘要")
+                with st.expander("📝 查看对话摘要", expanded=False):
+                    summary = memory_stats.get("summary", "无摘要")
+                    st.info(summary)
+            
+            # 显示对话历史列表
+            st.markdown("---")
+            st.subheader("💬 对话历史")
+            
+            # 获取对话历史（从 session_state）
+            if hasattr(st.session_state, 'chat_memory_messages') and st.session_state.chat_memory_messages:
+                messages = st.session_state.chat_memory_messages
+                
+                # 筛选出用户的问题
+                user_messages = [msg for msg in messages if msg.get("role") == "user"]
+                
+                if user_messages:
+                    # 构建紧凑的列表内容
+                    history_items = []
+                    for i, msg in enumerate(user_messages):
+                        content = msg.get("content", "")
+                        
+                        # 截取内容，最多显示 50 个字符
+                        max_length = 50
+                        if len(content) > max_length:
+                            display_content = content[:max_length] + "..."
+                        else:
+                            display_content = content
+                        
+                        # 添加到列表
+                        history_items.append(f"{i+1}. {display_content}")
+                    
+                    # 在一个容器中显示所有内容
+                    with st.container():
+                        for item in history_items:
+                            st.markdown(f"• {item}")
+                else:
+                    st.info("暂无对话历史")
+            else:
+                st.info("暂无对话历史")
     
     def show_processing_status(self, message: str):
         """显示处理状态"""

@@ -14,6 +14,7 @@ from llama_index.core.response_synthesizers import ResponseMode
 from llama_index.core.readers import SimpleDirectoryReader
 from chroma_repository import ChromaRepository
 from config import get_llm, get_embed_model, verify_settings
+from chat_memory import ChatMemoryManager
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -33,6 +34,13 @@ class DocumentChatModel:
         
         # 初始化ChromaDB仓库
         self.chroma_repo = ChromaRepository(collection_name="kflow")
+        
+        # 初始化对话记忆管理器
+        self.chat_memory = ChatMemoryManager(
+            llm=get_llm(),
+            max_tokens=8000,  # 设置为 8K tokens
+            summary_ratio=0.8  # 达到 80% 时触发摘要
+        )
         
         logger.info("DocumentChatModel初始化完成")
         
@@ -241,7 +249,7 @@ class DocumentChatModel:
     
     def query_document(self, query_engine, prompt: str):
         """
-        查询文档（从Milvus集合中检索）
+        查询文档（从ChromaDB集合中检索），包含对话历史上下文
         
         Args:
             query_engine: 查询引擎
@@ -258,7 +266,26 @@ class DocumentChatModel:
         
         try:
             logger.info(f"🔍 开始执行查询，提示: {prompt[:50]}...")
-            streaming_response = query_engine.query(prompt)
+            
+            # 获取对话上下文（包含摘要和最近的对话历史）
+            context = self.chat_memory.get_context_for_query(max_history_turns=3)
+            
+            # 如果有对话上下文，将其添加到查询中
+            if context:
+                enhanced_prompt = f"""基于以下对话历史和上下文，回答新的问题：
+
+{context}
+
+当前问题: {prompt}
+
+请基于文档内容和上述对话历史，给出准确、连贯的回答。"""
+                logger.info(f"💬 包含对话历史，上下文长度: {len(context)} 字符")
+                logger.info(f"📊 当前记忆状态: {self.chat_memory.get_memory_stats()}")
+            else:
+                enhanced_prompt = prompt
+                logger.info(f"💬 无对话历史，使用原始查询")
+            
+            streaming_response = query_engine.query(enhanced_prompt)
             
             if streaming_response is None:
                 logger.error("❌ 查询引擎返回空响应")
@@ -337,8 +364,10 @@ class DocumentChatModel:
             return None
     
     def add_message(self, role: str, content: str):
-        """添加消息到聊天历史"""
+        """添加消息到聊天历史和记忆管理器"""
         self.messages.append({"role": role, "content": content})
+        # 同时添加到记忆管理器（会自动处理摘要）
+        self.chat_memory.add_message(role, content)
     
     def get_messages(self) -> List[Dict[str, str]]:
         """获取聊天历史"""
@@ -347,6 +376,8 @@ class DocumentChatModel:
     def clear_messages(self):
         """清空聊天历史"""
         self.messages = []
+        # 同时清空记忆管理器
+        self.chat_memory.clear()
     
     def get_session_id(self) -> str:
         """获取会话ID"""
@@ -438,3 +469,12 @@ class DocumentChatModel:
             ollama_status = "unavailable"
         
         return chroma_status, ollama_status
+    
+    def get_memory_stats(self) -> Dict[str, Any]:
+        """
+        获取对话记忆统计信息
+        
+        Returns:
+            记忆统计信息字典
+        """
+        return self.chat_memory.get_memory_stats()

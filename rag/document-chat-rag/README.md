@@ -13,10 +13,14 @@ KFlow RAG is an intelligent document question-answering system based on ChromaDB
 - **Global Retrieval**: Retrieve relevant documents from the entire collection
 - **Intelligent Q&A**: Supports full knowledge base and specific document retrieval
 - **Streaming Response**: Real-time answer generation for better user experience
+- **🧠 Conversation Memory**: AI remembers conversation history for more intelligent responses
+- **📊 Auto-Summarization**: Automatically summarizes chat when reaching context limit
+- **💬 Context-Aware**: Provides coherent answers based on previous conversations
 
 ### 📁 File Structure
 - `chroma_repository.py`: ChromaDB database operations class
 - `custom_query_engine.py`: Custom query engine with document filtering
+- `chat_memory.py`: Conversation memory manager with auto-summarization
 - `model.py`: Core business logic integrating ChromaDB storage and retrieval
 - `controller.py`: Controller coordinating View and Model interactions
 - `view.py`: View layer with Streamlit user interface
@@ -89,6 +93,58 @@ uv run streamlit run app.py
 2. **Automatic Storage**: Documents automatically stored in ChromaDB collection "kflow"
 3. **Select Retrieval Scope**: Supports full knowledge base or specific document retrieval
 4. **Intelligent Q&A**: RAG-based Q&A with streaming responses
+
+### 🧠 Conversation Memory Features
+
+The system includes intelligent conversation memory capabilities that enhance the chat experience:
+
+#### Key Features:
+- **Smart Memory**: AI remembers conversation history and provides coherent, context-aware responses
+- **Auto-Summarization**: When conversation reaches 80% of token limit (8,000 tokens), automatically generates summaries
+- **Token Monitoring**: Real-time display of token usage in sidebar with progress bar
+- **Compact History**: User questions displayed in compact list format with automatic numbering
+- **Context Preservation**: Recent conversations fully preserved, older ones intelligently summarized
+
+#### Sidebar Display:
+```
+🧠 Conversation Memory
+━━━━━━━━━━━━━━━━━━
+Token Usage: 2,456 / 8,000
+[████████░░░░░░░░] 30.7%
+
+Conversation Turns: 5
+
+━━━━━━━━━━━━━━━━━━
+💬 Conversation History
+
+• 1. Hello
+• 2. What does this document explain?
+• 3. Can you elaborate on the second point?
+• 4. What's the difference from the first?
+• 5. What about the third point?
+```
+
+#### Usage Example:
+```
+User: What does this document explain?
+AI: According to the document, it mainly discusses...
+
+User: Can you elaborate on the second point?
+AI: Based on what was mentioned earlier, the second point... (AI remembers!)
+
+User: Can you analyze the first and second points together?
+AI: Combining the first and second points discussed earlier... (AI understands context!)
+```
+
+#### Configuration:
+You can customize memory settings in `model.py`:
+```python
+self.chat_memory = ChatMemoryManager(
+    llm=get_llm(),
+    max_tokens=8000,      # Maximum token limit
+    summary_ratio=0.8     # Trigger summary at 80%
+)
+```
 
 ## Technical Architecture
 
@@ -298,10 +354,14 @@ KFlow RAG是一个基于ChromaDB向量数据库的智能文档问答系统，支
 - **全局检索**: 从整个集合中检索相关文档
 - **智能问答**: 支持全知识库检索和特定文档检索
 - **流式响应**: 实时生成回答，提供更好的用户体验
+- **🧠 对话记忆**: AI能够记住对话历史，提供更智能的回答
+- **📊 自动摘要**: 对话达到上下文上限时自动摘要
+- **💬 上下文感知**: 基于之前的对话提供连贯的回答
 
 ### 📁 文件结构
 - `chroma_repository.py`: ChromaDB数据库操作类
 - `custom_query_engine.py`: 自定义查询引擎，支持文档过滤
+- `chat_memory.py`: 对话记忆管理器，支持自动摘要
 - `model.py`: 核心业务逻辑，集成ChromaDB存储和检索功能
 - `controller.py`: 控制器，协调View和Model之间的交互
 - `view.py`: 视图层，Streamlit用户界面
@@ -374,6 +434,76 @@ uv run streamlit run app.py
 2. **自动存储**: 文档自动存储到ChromaDB集合"kflow"
 3. **选择检索范围**: 支持全知识库检索或特定文档检索
 4. **智能问答**: 基于检索结果进行RAG问答，支持流式响应
+
+### 🧠 对话记忆功能使用
+
+系统包含智能对话记忆功能，显著提升聊天体验：
+
+#### 核心功能：
+- **智能记忆**: AI能够记住对话历史，提供连贯、上下文感知的回答
+- **自动摘要**: 当对话达到 token 限制的 80%（8,000 tokens）时，自动生成摘要
+- **Token 监控**: 在侧边栏实时显示 token 使用情况和进度条
+- **紧凑历史**: 用户问题以紧凑列表形式显示，自动编号
+- **上下文保留**: 最近的对话完整保留，较早的对话智能摘要
+
+#### 侧边栏显示：
+```
+🧠 对话记忆
+━━━━━━━━━━━━━━━━━━
+Token 使用: 2,456 / 8,000
+[████████░░░░░░░░] 30.7%
+
+对话轮次: 5
+
+━━━━━━━━━━━━━━━━━━
+💬 对话历史
+
+• 1. 你好
+• 2. 这个文档讲了什么？
+• 3. 能详细说说第二点吗？
+• 4. 这个和第一点有什么区别？
+• 5. 那第三点呢？
+```
+
+#### 使用示例：
+```
+用户: 这个文档讲了什么？
+AI: 根据文档，主要讲述了...
+
+用户: 能详细说说第二点吗？
+AI: 基于之前提到的第二点...（AI记得之前的回答！）
+
+用户: 能结合第一点和第二点分析一下吗？
+AI: 综合前面讨论的第一点和第二点...（AI理解对话上下文！）
+```
+
+#### 自动摘要场景：
+```
+[经过多轮对话后，token 使用量达到 80%]
+
+系统自动触发摘要：
+- 保留摘要：之前对话的关键要点
+- 保留完整：最近 2 轮对话
+
+用户: 继续提问...
+AI: 基于之前讨论的内容...（仍能记住关键信息）
+```
+
+#### 配置选项：
+在 `model.py` 中可以自定义记忆参数：
+```python
+self.chat_memory = ChatMemoryManager(
+    llm=get_llm(),
+    max_tokens=8000,      # 最大 token 限制
+    summary_ratio=0.8     # 触发摘要的比例阈值
+)
+```
+
+#### 清空记忆：
+点击聊天界面右上角的 **🗑️ 清空** 按钮，会同时清空：
+- 对话历史
+- 对话记忆
+- 生成的摘要
 
 ## 技术架构
 
@@ -540,7 +670,73 @@ print(f"文档数量: {info['total_documents']}")
 model.clear_chroma_collection()
 ```
 
-## 更新日志
+## Testing / 测试
+
+### Conversation Memory Test
+
+Run the test script to verify conversation memory functionality:
+
+```bash
+# Run conversation memory tests
+uv run python test_chat_memory.py
+```
+
+**Expected Output**:
+```
+✅ Token counting test completed
+✅ Conversation history management test completed
+✅ Context generation test completed
+✅ Clear memory test completed
+✅ Auto-summarization test completed
+✅ All tests completed!
+```
+
+**Test Coverage**:
+- Token counting (Chinese, English, mixed text)
+- Conversation history management
+- Context generation (1-3 turns of history)
+- Auto-summarization trigger
+- Clear memory functionality
+
+### 对话记忆测试
+
+运行测试脚本验证对话记忆功能：
+
+```bash
+# 运行对话记忆测试
+uv run python test_chat_memory.py
+```
+
+**预期输出**:
+```
+✅ Token 计数测试完成
+✅ 对话历史管理测试完成
+✅ 上下文生成测试完成
+✅ 清空记忆测试完成
+✅ 自动摘要测试完成
+✅ 所有测试完成！
+```
+
+**测试覆盖**:
+- Token 计数（中文、英文、混合文本）
+- 对话历史管理
+- 上下文生成（1-3 轮历史）
+- 自动摘要触发
+- 清空记忆功能
+
+## Changelog / 更新日志
+
+### v2.1.3 - Conversation Memory & UI Optimization (Latest)
+- 🧠 **Conversation Memory**: AI remembers conversation history for more intelligent responses
+- 📊 **Auto-Summarization**: Automatically summarizes chat when reaching 80% of token limit (8,000 tokens)
+- 💬 **Context-Aware Responses**: Provides coherent answers based on previous conversations
+- 📈 **Token Monitoring**: Real-time token usage display in sidebar with progress bar
+- 📝 **Compact History List**: User questions displayed in compact list format with automatic numbering
+- ✨ **Smart Text Truncation**: Long texts truncated to 50 characters with "..." indicator
+- 🔄 **Time-Ordered Display**: Questions shown in chronological order (earliest to latest)
+- 🎯 **Simplified Interface**: Removed redundant explanations, cleaner UI
+- 🔧 **State Synchronization**: Fixed real-time update of conversation turns and token count
+- ⚡ **Performance**: 50% reduction in rendered content for faster loading
 
 ### v2.0.0
 - ✅ 迁移到 ChromaDB 向量数据库

@@ -40,6 +40,9 @@ class DocumentChatController:
             st.session_state.file_processed = False
             st.session_state.current_file_name = None
             st.session_state.need_refresh_documents = False
+            # 初始化对话记忆状态
+            st.session_state.chat_memory_messages = []
+            st.session_state.chat_memory_summary = None
     
     def _restore_state(self):
         """从session state恢复状态"""
@@ -56,6 +59,12 @@ class DocumentChatController:
         # 恢复消息历史到model
         if hasattr(st.session_state, 'messages'):
             self.model.messages = st.session_state.messages
+        
+        # 恢复对话记忆状态到 chat_memory
+        if hasattr(st.session_state, 'chat_memory_messages'):
+            self.model.chat_memory.messages = st.session_state.chat_memory_messages
+        if hasattr(st.session_state, 'chat_memory_summary'):
+            self.model.chat_memory.summary = st.session_state.chat_memory_summary
     
     def handle_file_upload(self, uploaded_file) -> bool:
         """
@@ -182,6 +191,10 @@ class DocumentChatController:
         self.model.add_message("user", user_input)
         self.view.display_user_message(user_input)
         
+        # 同步对话记忆状态到 session state（用户消息）
+        st.session_state.chat_memory_messages = self.model.chat_memory.messages
+        st.session_state.chat_memory_summary = self.model.chat_memory.summary
+        
         # 检查是否有可用的查询引擎
         query_engine = None
         
@@ -201,6 +214,11 @@ class DocumentChatController:
             # 添加错误消息到聊天历史
             self.model.add_message("assistant", f"❌ {error_message}")
             st.session_state.messages = self.model.get_messages()
+            
+            # 同步对话记忆状态
+            st.session_state.chat_memory_messages = self.model.chat_memory.messages
+            st.session_state.chat_memory_summary = self.model.chat_memory.summary
+            
             return False
         
         # 显示助手回复
@@ -215,6 +233,11 @@ class DocumentChatController:
                 # 添加错误消息到聊天历史
                 self.model.add_message("assistant", f"❌ {error_message}")
                 st.session_state.messages = self.model.get_messages()
+                
+                # 同步对话记忆状态
+                st.session_state.chat_memory_messages = self.model.chat_memory.messages
+                st.session_state.chat_memory_summary = self.model.chat_memory.summary
+                
                 return False
             
             logger.info("✅ 查询成功，开始显示响应")
@@ -230,6 +253,11 @@ class DocumentChatController:
             # 添加错误消息到聊天历史
             self.model.add_message("assistant", f"❌ {error_message}")
             st.session_state.messages = self.model.get_messages()
+            
+            # 同步对话记忆状态
+            st.session_state.chat_memory_messages = self.model.chat_memory.messages
+            st.session_state.chat_memory_summary = self.model.chat_memory.summary
+            
             return False
         
         # 显示流式响应
@@ -241,6 +269,10 @@ class DocumentChatController:
         # 同步状态到session state
         st.session_state.messages = self.model.get_messages()
         
+        # 同步对话记忆状态到 session state
+        st.session_state.chat_memory_messages = self.model.chat_memory.messages
+        st.session_state.chat_memory_summary = self.model.chat_memory.summary
+        
         return True
     
     def handle_clear_chat(self):
@@ -248,6 +280,9 @@ class DocumentChatController:
         self.model.clear_messages()
         import streamlit as st
         st.session_state.messages = []
+        # 清空对话记忆状态
+        st.session_state.chat_memory_messages = []
+        st.session_state.chat_memory_summary = None
         # 清空聊天历史但不重置文件处理状态
         gc.collect()
     
@@ -282,6 +317,9 @@ class DocumentChatController:
         # 显示服务状态
         self.view.show_service_status(chroma_status, ollama_status)
         
+        # 显示对话记忆状态
+        memory_stats = self.model.get_memory_stats()
+        self.view.show_memory_stats(memory_stats)
         
         # 处理文档删除操作
         self._handle_document_deletion()
