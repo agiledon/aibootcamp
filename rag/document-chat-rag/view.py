@@ -246,60 +246,6 @@ class DocumentChatView:
         
         return False
     
-    def render_search_scope_control(self, existing_documents: List[Dict[str, Any]] = None):
-        """
-        渲染检索范围控制组件
-        
-        Args:
-            existing_documents: 已有文档列表
-            
-        Returns:
-            tuple: (search_scope, selected_documents)
-        """
-        # 检索范围选择
-        col1, col2 = st.columns([3, 7])
-        
-        with col1:
-            search_scope = st.selectbox(
-                "检索范围",
-                options=["全知识库", "已选文档"],
-                help="选择检索范围：全知识库或特定文档"
-            )
-        
-        selected_documents = []
-        
-        if search_scope == "已选文档":
-            with col2:
-                if existing_documents and len(existing_documents) > 0:
-                    # 创建文档选择选项
-                    doc_options = [f"{doc['file_name']} ({doc['file_type']})" for doc in existing_documents]
-                    
-                    selected_indices = st.multiselect(
-                        "选择文档",
-                        options=list(range(len(existing_documents))),
-                        format_func=lambda x: doc_options[x],
-                        help="选择要检索的文档（可多选）",
-                        placeholder="请选择文档..."
-                    )
-                    
-                    # 根据选择的索引获取文档信息
-                    selected_documents = [existing_documents[i] for i in selected_indices]
-                    
-                    if selected_documents:
-                        st.success(f"已选择 {len(selected_documents)} 个文档")
-                    else:
-                        st.info("请选择要检索的文档")
-                else:
-                    st.warning("知识库中没有文档，请先上传文档")
-        
-        else:  # 全知识库
-            with col2:
-                if existing_documents and len(existing_documents) > 0:
-                    st.success(f"将检索知识库中的所有 {len(existing_documents)} 个文档")
-                else:
-                    st.warning("知识库中没有文档，请先上传文档")
-        
-        return search_scope, selected_documents
     
     def display_chat_messages(self, messages: List[Dict[str, str]]):
         """

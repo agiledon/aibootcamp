@@ -40,8 +40,6 @@ class DocumentChatController:
             st.session_state.file_processed = False
             st.session_state.current_file_name = None
             st.session_state.need_refresh_documents = False
-            st.session_state.search_scope = "全知识库"
-            st.session_state.selected_documents = []
     
     def _restore_state(self):
         """从session state恢复状态"""
@@ -165,14 +163,12 @@ class DocumentChatController:
                     del st.session_state.delete_document
             return False
     
-    def handle_chat_input(self, user_input: str, search_scope: str = None, selected_documents: List = None) -> bool:
+    def handle_chat_input(self, user_input: str) -> bool:
         """
         处理用户聊天输入
         
         Args:
             user_input: 用户输入的消息
-            search_scope: 检索范围
-            selected_documents: 选中的文档列表
             
         Returns:
             bool: 处理是否成功
@@ -189,35 +185,16 @@ class DocumentChatController:
         # 检查是否有可用的查询引擎
         query_engine = None
         
-        # 根据检索范围获取查询引擎
-        if search_scope == "已选文档":
-            # 如果选择"已选文档"但没有选择具体文档，且当前有上传的文件，则使用当前文件
-            if (not selected_documents or len(selected_documents) == 0) and hasattr(st.session_state, 'current_file_name') and st.session_state.current_file_name:
-                # 使用当前上传的文件
-                current_file_doc = [{"file_name": st.session_state.current_file_name}]
-                query_engine = self.model.get_query_engine_for_scope(search_scope, current_file_doc)
-            else:
-                # 使用选中的文档
-                query_engine = self.model.get_query_engine_for_scope(search_scope, selected_documents)
-        else:
-            # 全知识库检索
-            query_engine = self.model.get_query_engine_for_scope("全知识库")
+        # 获取查询引擎（全知识库检索）
+        query_engine = self.model.get_query_engine()
         
         if query_engine is None:
-            # 提供更详细的错误信息和解决方案
-            error_message = ""
-            if search_scope == "已选文档":
-                if not selected_documents or len(selected_documents) == 0:
-                    error_message = "请先选择要检索的文档或上传文档"
-                else:
-                    error_message = "选中的文档无法创建查询引擎，可能是ChromaDB连接或嵌入模型配置问题"
+            # 检查知识库状态
+            existing_docs = self.model.get_existing_documents()
+            if not existing_docs or len(existing_docs) == 0:
+                error_message = "知识库中没有文档，请先上传文档"
             else:
-                # 检查知识库状态
-                existing_docs = self.model.get_existing_documents()
-                if not existing_docs or len(existing_docs) == 0:
-                    error_message = "知识库中没有文档，请先上传文档"
-                else:
-                    error_message = "无法连接到知识库，请检查ChromaDB服务状态和嵌入模型配置"
+                error_message = "无法连接到知识库，请检查ChromaDB服务状态和嵌入模型配置"
             
             self.view.show_warning_message(error_message)
             
@@ -305,12 +282,6 @@ class DocumentChatController:
         # 显示服务状态
         self.view.show_service_status(chroma_status, ollama_status)
         
-        # 渲染检索范围控制
-        search_scope, selected_documents = self.view.render_search_scope_control(existing_documents)
-        
-        # 保存检索范围状态
-        st.session_state.search_scope = search_scope
-        st.session_state.selected_documents = selected_documents
         
         # 处理文档删除操作
         self._handle_document_deletion()
@@ -334,5 +305,5 @@ class DocumentChatController:
         user_input = self.view.render_chat_input()
         
         if user_input:
-            self.handle_chat_input(user_input, search_scope, selected_documents)
+            self.handle_chat_input(user_input)
             st.rerun()

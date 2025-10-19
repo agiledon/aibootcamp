@@ -13,7 +13,6 @@ from llama_index.core.schema import Document
 from llama_index.core.node_parser import SentenceSplitter
 import chromadb
 
-from custom_query_engine import FilteredQueryEngine
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -195,12 +194,11 @@ class ChromaRepository:
             self.index = None
             return False
     
-    def get_query_engine(self, file_names: Optional[List[str]] = None, llm=None, streaming: bool = True):
+    def get_query_engine(self, llm=None, streaming: bool = True):
         """
-        获取查询引擎，用于RAG检索
+        获取查询引擎，用于RAG检索（全知识库）
         
         Args:
-            file_names: 指定要检索的文件名列表，None表示检索所有文件
             llm: 语言模型实例
             streaming: 是否启用流式响应
             
@@ -212,7 +210,6 @@ class ChromaRepository:
             logger.info(f"ChromaDB可用状态: {self.is_available}")
             logger.info(f"索引状态: {self.index is not None}")
             logger.info(f"向量存储状态: {self.vector_store is not None}")
-            logger.info(f"目标文件: {file_names}")
             
             # 如果没有索引，尝试创建或重新创建
             if self.index is None:
@@ -242,26 +239,20 @@ class ChromaRepository:
                     logger.error("❌ ChromaDB不可用，无法创建查询引擎")
                     return None
             
-            # 创建自定义过滤查询引擎
+            # 创建查询引擎
             try:
-                logger.info("开始创建自定义过滤查询引擎...")
-                # 创建一个新的回调管理器，避免回调栈状态问题
-                from llama_index.core.callbacks import CallbackManager
-                callback_manager = CallbackManager()
+                logger.info("开始创建查询引擎...")
                 
-                query_engine = FilteredQueryEngine(
-                    index=self.index,
-                    target_files=file_names,
+                query_engine = self.index.as_query_engine(
                     similarity_top_k=5,
                     streaming=streaming,
-                    llm=llm,
-                    callback_manager=callback_manager
+                    llm=llm
                 )
-                logger.info("✅ 自定义过滤查询引擎创建成功")
+                logger.info("✅ 查询引擎创建成功")
                 return query_engine
                 
             except Exception as e:
-                logger.error(f"❌ 创建自定义过滤查询引擎时发生错误: {e}")
+                logger.error(f"❌ 创建查询引擎时发生错误: {e}")
                 import traceback
                 logger.error(f"详细错误信息: {traceback.format_exc()}")
                 return None

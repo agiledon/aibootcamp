@@ -319,42 +319,19 @@ class DocumentChatModel:
             logger.error(f"❌ 详细错误堆栈: {traceback.format_exc()}")
             return None
     
-    def get_query_engine_for_scope(self, search_scope: str, selected_documents: List[Dict[str, Any]] = None):
+    def get_query_engine(self):
         """
-        根据检索范围获取查询引擎
+        获取查询引擎（全知识库检索）
         
-        Args:
-            search_scope: 检索范围 ("全知识库" 或 "已选文档")
-            selected_documents: 选中的文档列表
-            
         Returns:
             查询引擎对象
         """
         try:
-            if search_scope == "全知识库":
-                # 全知识库检索
-                logger.info("创建全知识库查询引擎")
-                return self.chroma_repo.get_query_engine(
-                    file_names=None,  # None表示全知识库
-                    llm=self.llm,
-                    streaming=True
-                )
-            elif search_scope == "已选文档":
-                # 特定文档检索
-                if selected_documents and len(selected_documents) > 0:
-                    file_names = [doc['file_name'] for doc in selected_documents]
-                    logger.info(f"创建特定文档查询引擎，文件: {file_names}")
-                    return self.chroma_repo.get_query_engine(
-                        file_names=file_names,
-                        llm=self.llm,
-                        streaming=True
-                    )
-                else:
-                    logger.warning("未选择任何文档")
-                    return None
-            else:
-                logger.error(f"未知的检索范围: {search_scope}")
-                return None
+            logger.info("创建全知识库查询引擎")
+            return self.chroma_repo.get_query_engine(
+                llm=self.llm,
+                streaming=True
+            )
         except Exception as e:
             logger.error(f"获取查询引擎失败: {e}")
             return None
