@@ -56,7 +56,7 @@ splitter = CodeSplitter(
 )
 nodes = splitter.get_nodes_from_documents(python_code_docs)
 
-# print_nodes_info(nodes, "CodeSplitter 解析结果")
+print_nodes_info(nodes, "CodeSplitter 解析结果")
 
 ##### SentenceWindowNodeParser #####
 
@@ -80,7 +80,7 @@ from llama_index.core.node_parser import SemanticSplitterNodeParser
 from llama_index.embeddings.ollama import OllamaEmbedding
 
 embed_model = OllamaEmbedding(
-    model_name="nomic-embed-text",
+    model_name="nomic-embed-text:latest",
     request_timeout=30,  # 减少嵌入请求超时时间
     keep_alive="1m"  # 减少保持连接时间
 )

@@ -24,7 +24,7 @@ def initialize_settings():
         llm = DeepSeek(
             model="deepseek-chat",
             temperature=0.1,
-            max_tokens=1000,
+            max_tokens=100000,
             timeout=120,
             max_retries=3
         )
@@ -32,7 +32,7 @@ def initialize_settings():
         # 2. 初始化Ollama嵌入模型
         logger.info("正在初始化Ollama嵌入模型...")
         embed_model = OllamaEmbedding(
-            model_name="nomic-embed-text",
+            model_name="nomic-embed-text:latest",
             request_timeout=60,
             keep_alive="5m"
         )

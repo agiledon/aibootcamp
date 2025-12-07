@@ -230,15 +230,35 @@ Settings.llm = ChatDeepSeek(
 )
 
 Settings.embed_model = OllamaEmbedding(
-    model_name="nomic-embed-text",
+    model_name="nomic-embed-text:latest",
     request_timeout=30,  # 减少嵌入请求超时时间
     keep_alive="1m"  # 减少保持连接时间
 )
 
 from llama_index.core import VectorStoreIndex
 
-index = VectorStoreIndex(all_nodes)
-
-# response = index.as_query_engine().query("DDD的价值包括哪些，请给出详细的解释。如果文档中有相关内容，请给出具体内容。")
-response = index.as_query_engine().query("请分析MultiHeadAttention类的主要作用和实现原理。")
-print(response)
+# 尝试创建索引和查询，如果 Ollama 服务不可用则跳过
+try:
+    print(f"\n{'='*50}")
+    print("正在创建向量索引...")
+    print(f"{'='*50}")
+    index = VectorStoreIndex(all_nodes)
+    print("向量索引创建成功！")
+    
+    print(f"\n{'='*50}")
+    print("正在执行查询...")
+    print(f"{'='*50}")
+    # response = index.as_query_engine().query("DDD的价值包括哪些，请给出详细的解释。如果文档中有相关内容，请给出具体内容。")
+    response = index.as_query_engine().query("请分析MultiHeadAttention类的主要作用和实现原理。")
+    print(response)
+except Exception as e:
+    print(f"\n{'='*50}")
+    print("警告：无法创建向量索引或执行查询")
+    print(f"{'='*50}")
+    print(f"错误类型: {type(e).__name__}")
+    print(f"错误信息: {str(e)}")
+    print("\n可能的原因:")
+    print("1. Ollama 服务未运行 - 请确保 Ollama 已启动")
+    print("2. 嵌入模型未下载 - 请运行: ollama pull nomic-embed-text:latest")
+    print("3. 网络连接问题 - 请检查 Ollama 服务是否可访问")
+    print("\n提示: 文档解析已完成，只是无法创建向量索引进行查询。")

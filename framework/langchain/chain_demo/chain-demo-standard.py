@@ -3,7 +3,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_ollama import OllamaLLM
 
-llm = OllamaLLM(model="qwen:7b")
+llm = OllamaLLM(model="qwen:7b",temperature=0.1,max_tokens=1000,timeout=60,max_retries=2)
 
 # 创建一个链式架构来生成故事的标题
 template = """<s><|user|>
